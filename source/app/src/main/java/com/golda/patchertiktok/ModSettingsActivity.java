@@ -545,6 +545,7 @@ public final class ModSettingsActivity extends Activity {
         navigation(about, I18n.get(S.VERSION), BuildConfig.VERSION_NAME, null);
         navigation(about, I18n.get(S.BACKUP_EXPORT), null, view -> openSheet(exportSheet()));
         navigation(about, I18n.get(S.BACKUP_IMPORT), null, view -> push(importPage(), true));
+        navigation(about, I18n.get(S.RESET_ALL), null, view -> openSheet(resetSheet()));
         navigation(about, I18n.get(S.SOURCE_CODE), null, view -> {
             try {
                 startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(SOURCE_URL)));
@@ -1521,6 +1522,26 @@ public final class ModSettingsActivity extends Activity {
             closeSheet();
             copySettings();
         });
+        return content;
+    }
+
+    private View resetSheet() {
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout info = row(content);
+        info.setClickable(false);
+        info.setBackground(null);
+        texts(info, I18n.get(S.RESET_CONFIRM), I18n.get(S.RESET_CONFIRM_TEXT));
+        LinearLayout reset = row(content);
+        ((TextView) texts(reset, I18n.get(S.RESET_ALL), null).getChildAt(0)).setTextColor(0xFFFE2C55);
+        reset.setOnClickListener(view -> {
+            closeSheet();
+            Prefs.reset();
+            android.widget.Toast.makeText(this, I18n.get(S.RESET_DONE), android.widget.Toast.LENGTH_SHORT).show();
+        });
+        LinearLayout cancel = row(content);
+        texts(cancel, getString(android.R.string.cancel), null);
+        cancel.setOnClickListener(view -> closeSheet());
         return content;
     }
 
