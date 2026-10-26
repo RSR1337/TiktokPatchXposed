@@ -60,6 +60,7 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **Exact numbers**: likes, comments, shares, views and profile counts in full.
 - 🧪 **Picture-in-picture**: TikTok's own floating video window.
 - **3× speed** in TikTok's own speed menu.
+- 🧪 **No like on double tap**: the heart button still works.
 - **Screen refresh rate**: hold 60, 90 or 120 Hz; TikTok no longer lowers it to the video's frame rate.
 - **Own speeds** and **remember speed**.
 - **Resume where you left off**, **keep "Clear display"**.
@@ -75,7 +76,9 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **Hide elements**: side buttons, the music disc, author and caption, the Tako button.
 - **Interface opacity**, **OLED burn-in protection** and **keep brightness** (TikTok no longer turns it up in the camera and editor).
 - **New profile layout**, **hide stories in the Inbox**.
+- 🧪 **Account creation date**: the exact date and time under the name on profiles.
 - **Time on messages**: under every chat message.
+- 🧪 **Keep unsent messages**: when someone unsends a message, it stays in the chat marked "Unsent".
 - **"Read all"**: hold the Inbox tab.
 
 ### Comments

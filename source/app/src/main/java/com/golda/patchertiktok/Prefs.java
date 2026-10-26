@@ -59,6 +59,9 @@ final class Prefs {
     static final String GHOST_READ = "ghost_read";
     /** The sent time under each chat message. */
     static final String MESSAGE_TIME = "message_time";
+    static final String KEEP_UNSENT = "keep_unsent_messages";
+    static final String NO_DOUBLE_TAP_LIKE = "no_double_tap_like";
+    static final String ACCOUNT_DATE = "account_created_date";
     /** Hide recommended videos published longer ago than {@link #oldVideoDays()}. */
     static final String OLD_VIDEOS = "hide_old_videos";
     static final String OLD_VIDEO_DAYS = "old_video_days";
@@ -191,6 +194,9 @@ final class Prefs {
         DEFAULTS.put(GHOST_ONLINE, false);
         DEFAULTS.put(GHOST_READ, false);
         DEFAULTS.put(MESSAGE_TIME, false);
+        DEFAULTS.put(KEEP_UNSENT, false);
+        DEFAULTS.put(NO_DOUBLE_TAP_LIKE, false);
+        DEFAULTS.put(ACCOUNT_DATE, false);
         DEFAULTS.put(OLD_VIDEOS, false);
         DEFAULTS.put(PROMO, true);
         DEFAULTS.put(AI_CONTENT, false);

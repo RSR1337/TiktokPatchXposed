@@ -30,6 +30,7 @@ final class Module {
             run("remember clear display", () -> CleanScreen.install(loader));
             run("resume position", () -> ResumePosition.install(loader));
             run("auto-scroll", () -> AutoScroll.install(loader));
+            run("double tap like", () -> DoubleTapLike.install(loader));
             run("comment copy", () -> CommentCopy.install(loader));
             run("comment media", () -> CommentMedia.install(loader));
             run("external browser", () -> ExternalLinks.install(loader));
@@ -92,6 +93,7 @@ final class Module {
         run("unmute", () -> Unmute.install(loader));
         run("hd upload", () -> HdUpload.install(loader));
         run("read receipts", () -> ReadReceipts.install(loader));
+        run("unsent messages", () -> UnsentMessages.install(loader));
         run("read all", () -> InboxReadAll.install(loader));
         run("comment author", () -> CommentAuthor.install(loader));
         run("native auto-scroll", () -> AutoScroll.installNative(loader));

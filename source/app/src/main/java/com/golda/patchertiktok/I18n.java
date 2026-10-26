@@ -66,7 +66,8 @@ final class I18n {
         GROUP_ANALYTICS, NO_TRACKERS, NO_TRACKERS_DESC, NO_TIKTOK_ANALYTICS, NO_TIKTOK_ANALYTICS_DESC,
         UPLOAD_ORIGINAL, UPLOAD_ORIGINAL_DESC,
         FEED_REGION_OWN, FEED_REGION_OWN_DESC, FEED_REGION, FEED_REGION_PICK,
-        RESET_ALL, RESET_CONFIRM, RESET_CONFIRM_TEXT, RESET_DONE
+        RESET_ALL, RESET_CONFIRM, RESET_CONFIRM_TEXT, RESET_DONE,
+        KEEP_UNSENT, KEEP_UNSENT_DESC, UNSENT_MARK, NO_DOUBLE_TAP_LIKE, NO_DOUBLE_TAP_LIKE_DESC, ACCOUNT_DATE, ACCOUNT_DATE_DESC, ACCOUNT_CREATED
     }
 
     private static final Map<String, String[]> TABLES = new HashMap<>();
@@ -114,7 +115,10 @@ final class I18n {
                 "Analytics", "Block third-party trackers", "Google/Firebase, Facebook and AppsFlyer collect nothing. Safe: the feed, sign-in and recommendations don’t change", "Don’t send TikTok’s analytics", "TikTok’s event log (what you tap and how long you watch) is not uploaded. Sign-in and the feed work as usual, but recommendations learn less from you and may get less personal",
                 "Upload the original (up to 4K)", "A video posted without edits goes up as the file itself, without TikTok’s re-encode; 4K videos can be picked from the gallery. Whether TikTok keeps 2160p is up to its server. The file’s own metadata may go along",
                 "Own recommendation region", "Videos come from another country, while the SIM stays in the region above. Applies after restarting TikTok", "Recommendation country", "Choose",
-                "Reset all settings", "Reset all settings?", "Every switch, filter, region and color goes back to its default. Export the settings first to keep a copy.", "Settings reset"});
+                "Reset all settings", "Reset all settings?", "Every switch, filter, region and color goes back to its default. Export the settings first to keep a copy.", "Settings reset",
+                "Keep unsent messages", "When someone unsends a chat message, it stays on your phone marked “Unsent”. Only messages your phone already received can be kept", "Unsent",
+                "No like on double tap", "Double-tapping a video no longer likes it; the heart button still does",
+                "Account creation date", "On profiles, the exact date and time the account was made, under the name. Very old musical.ly accounts don't have one", "Created %s"});
         TABLES.put("ru", new String[]{
                 "TiktokPatchXposed", "Лента",
                 "Блокировать рекламу", "В ленте, при запуске и в других списках видео",
@@ -157,7 +161,10 @@ final class I18n {
                 "Аналитика", "Блокировать сторонние трекеры", "Google/Firebase, Facebook и AppsFlyer ничего не собирают. Безопасно: лента, вход и рекомендации не меняются", "Не отправлять аналитику TikTok", "Журнал событий TikTok (что вы нажимаете и сколько смотрите) не отправляется. Вход и лента работают как обычно, но рекомендации меньше учатся на вас и могут стать менее точными",
                 "Загрузка оригинала (до 4K)", "Видео без правок загружается самим файлом, без пережатия TikTok; 4K-видео можно выбрать в галерее. Оставит ли TikTok 2160p, решает его сервер. Вместе с файлом могут уйти его метаданные",
                 "Свой регион рекомендаций", "Видео подбираются из другой страны, а SIM остаётся в регионе выше. Применится после перезапуска TikTok", "Страна рекомендаций", "Выбрать",
-                "Сбросить все настройки", "Сбросить все настройки?", "Все переключатели, фильтры, регион и цвета вернутся к значениям по умолчанию. Чтобы сохранить копию, сначала экспортируйте настройки.", "Настройки сброшены"});
+                "Сбросить все настройки", "Сбросить все настройки?", "Все переключатели, фильтры, регион и цвета вернутся к значениям по умолчанию. Чтобы сохранить копию, сначала экспортируйте настройки.", "Настройки сброшены",
+                "Сохранять удалённые сообщения", "Если собеседник отменит отправку сообщения, оно останется у вас с пометкой «Удалено». Сохраняются только сообщения, которые уже пришли на телефон", "Удалено",
+                "Без лайка двойным касанием", "Двойное касание видео больше не ставит лайк; кнопка с сердцем работает как обычно",
+                "Дата создания аккаунта", "В профилях под именем — точные дата и время создания аккаунта. У очень старых аккаунтов musical.ly её нет", "Создан %s"});
         TABLES.put("uk", new String[]{
                 "TiktokPatchXposed", "Стрічка",
                 "Блокувати рекламу", "У стрічці, під час запуску та в інших списках відео",
@@ -200,7 +207,10 @@ final class I18n {
                 "Аналітика", "Блокувати сторонні трекери", "Google/Firebase, Facebook і AppsFlyer нічого не збирають. Безпечно: стрічка, вхід і рекомендації не змінюються", "Не надсилати аналітику TikTok", "Журнал подій TikTok (що ви натискаєте і скільки дивитеся) не надсилається. Вхід і стрічка працюють як звичайно, але рекомендації менше вчаться на вас і можуть стати менш точними",
                 "Завантаження оригіналу (до 4K)", "Відео без змін завантажується самим файлом, без перетискання TikTok; 4K-відео можна вибрати в галереї. Чи залишить TikTok 2160p, вирішує його сервер. Разом із файлом можуть піти його метадані",
                 "Свій регіон рекомендацій", "Відео добираються з іншої країни, а SIM лишається в регіоні вище. Застосується після перезапуску TikTok", "Країна рекомендацій", "Вибрати",
-                "Скинути всі налаштування", "Скинути всі налаштування?", "Усі перемикачі, фільтри, регіон і кольори повернуться до типових значень. Щоб зберегти копію, спершу експортуйте налаштування.", "Налаштування скинуто"});
+                "Скинути всі налаштування", "Скинути всі налаштування?", "Усі перемикачі, фільтри, регіон і кольори повернуться до типових значень. Щоб зберегти копію, спершу експортуйте налаштування.", "Налаштування скинуто",
+                "Зберігати видалені повідомлення", "Якщо співрозмовник скасує надсилання повідомлення, воно залишиться у вас з позначкою «Видалено». Зберігаються лише повідомлення, які вже надійшли на телефон", "Видалено",
+                "Без лайка подвійним дотиком", "Подвійний дотик до відео більше не ставить лайк; кнопка із серцем працює як звичайно",
+                "Дата створення акаунта", "У профілях під іменем — точні дата й час створення акаунта. Дуже старі акаунти musical.ly її не мають", "Створено %s"});
         TABLES.put("de", new String[]{
                 "TiktokPatchXposed", "Feed",
                 "Werbung blockieren", "Im Feed, beim Start und in anderen Videolisten",
@@ -243,7 +253,10 @@ final class I18n {
                 "Analyse", "Drittanbieter-Tracker blockieren", "Google/Firebase, Facebook und AppsFlyer sammeln nichts. Sicher: Feed, Anmeldung und Empfehlungen bleiben gleich", "TikTok-Analysen nicht senden", "TikToks Ereignisprotokoll (was du tippst und wie lange du schaust) wird nicht hochgeladen. Anmeldung und Feed funktionieren normal, aber Empfehlungen lernen weniger von dir und werden ungenauer",
                 "Original hochladen (bis 4K)", "Ein Video ohne Bearbeitung wird als Datei selbst hochgeladen, ohne TikToks Neukodierung; 4K-Videos lassen sich aus der Galerie wählen. Ob TikTok 2160p behält, entscheidet sein Server. Die Metadaten der Datei können mitgehen",
                 "Eigene Empfehlungsregion", "Videos kommen aus einem anderen Land, die SIM bleibt in der Region oben. Gilt nach dem Neustart von TikTok", "Land der Empfehlungen", "Auswählen",
-                "Alle Einstellungen zurücksetzen", "Alle Einstellungen zurücksetzen?", "Alle Schalter, Filter, die Region und Farben kehren zum Standard zurück. Exportiere die Einstellungen vorher, um eine Kopie zu behalten.", "Einstellungen zurückgesetzt"});
+                "Alle Einstellungen zurücksetzen", "Alle Einstellungen zurücksetzen?", "Alle Schalter, Filter, die Region und Farben kehren zum Standard zurück. Exportiere die Einstellungen vorher, um eine Kopie zu behalten.", "Einstellungen zurückgesetzt",
+                "Zurückgezogene Nachrichten behalten", "Zieht jemand eine Chatnachricht zurück, bleibt sie bei dir mit „Zurückgezogen“ markiert. Nur Nachrichten, die schon auf deinem Handy angekommen sind", "Zurückgezogen",
+                "Kein Like per Doppeltippen", "Doppeltippen auf ein Video gibt kein Like mehr; das Herz funktioniert wie gewohnt",
+                "Erstellungsdatum des Kontos", "Auf Profilen unter dem Namen: genaues Datum und Uhrzeit, wann das Konto erstellt wurde. Sehr alte musical.ly-Konten haben keins", "Erstellt %s"});
         TABLES.put("es", new String[]{
                 "TiktokPatchXposed", "Feed",
                 "Bloquear anuncios", "En el feed, al iniciar y en otras listas de vídeos",
@@ -286,7 +299,10 @@ final class I18n {
                 "Analítica", "Bloquear rastreadores de terceros", "Google/Firebase, Facebook y AppsFlyer no recopilan nada. Seguro: el feed, el inicio de sesión y las recomendaciones no cambian", "No enviar la analítica de TikTok", "El registro de eventos de TikTok (lo que tocas y cuánto ves) no se sube. El inicio de sesión y el feed funcionan igual, pero las recomendaciones aprenden menos de ti y pueden ser menos personales",
                 "Subir el original (hasta 4K)", "Un vídeo sin ediciones se sube como el propio archivo, sin la recompresión de TikTok; se pueden elegir vídeos 4K de la galería. Si TikTok conserva 2160p lo decide su servidor. Los metadatos del archivo pueden ir incluidos",
                 "Región de recomendaciones propia", "Los vídeos llegan de otro país y la SIM sigue en la región de arriba. Se aplica al reiniciar TikTok", "País de recomendaciones", "Elegir",
-                "Restablecer todos los ajustes", "¿Restablecer todos los ajustes?", "Todos los interruptores, filtros, la región y los colores vuelven a sus valores predeterminados. Exporta los ajustes antes si quieres guardar una copia.", "Ajustes restablecidos"});
+                "Restablecer todos los ajustes", "¿Restablecer todos los ajustes?", "Todos los interruptores, filtros, la región y los colores vuelven a sus valores predeterminados. Exporta los ajustes antes si quieres guardar una copia.", "Ajustes restablecidos",
+                "Conservar mensajes anulados", "Si alguien anula el envío de un mensaje en un chat, se queda en tu teléfono marcado como «Anulado». Solo se conservan los mensajes que ya llegaron a tu teléfono", "Anulado",
+                "Sin me gusta con doble toque", "Tocar dos veces un vídeo ya no da me gusta; el botón del corazón funciona como siempre",
+                "Fecha de creación de la cuenta", "En los perfiles, bajo el nombre: la fecha y hora exactas en que se creó la cuenta. Las cuentas muy antiguas de musical.ly no la tienen", "Creada %s"});
         TABLES.put("pt", new String[]{
                 "TiktokPatchXposed", "Feed",
                 "Bloquear anúncios", "No feed, ao abrir e em outras listas de vídeos",
@@ -329,7 +345,10 @@ final class I18n {
                 "Análise", "Bloquear rastreadores de terceiros", "Google/Firebase, Facebook e AppsFlyer não coletam nada. Seguro: o feed, o login e as recomendações não mudam", "Não enviar a análise do TikTok", "O registro de eventos do TikTok (o que você toca e quanto assiste) não é enviado. Login e feed funcionam normalmente, mas as recomendações aprendem menos com você e podem ficar menos pessoais",
                 "Enviar o original (até 4K)", "Um vídeo sem edições é enviado como o próprio arquivo, sem a recompressão do TikTok; vídeos 4K podem ser escolhidos na galeria. Se o TikTok mantém 2160p, o servidor decide. Os metadados do arquivo podem ir junto",
                 "Região de recomendações própria", "Os vídeos vêm de outro país e o SIM continua na região acima. Aplica-se após reiniciar o TikTok", "País das recomendações", "Escolher",
-                "Redefinir todas as configurações", "Redefinir todas as configurações?", "Todos os interruptores, filtros, a região e as cores voltam ao padrão. Exporte as configurações antes para guardar uma cópia.", "Configurações redefinidas"});
+                "Redefinir todas as configurações", "Redefinir todas as configurações?", "Todos os interruptores, filtros, a região e as cores voltam ao padrão. Exporte as configurações antes para guardar uma cópia.", "Configurações redefinidas",
+                "Manter mensagens anuladas", "Quando alguém anula o envio de uma mensagem no chat, ela fica no seu telefone marcada como “Anulada”. Só ficam as mensagens que já chegaram ao telefone", "Anulada",
+                "Sem curtida com toque duplo", "Tocar duas vezes no vídeo não curte mais; o botão de coração funciona normalmente",
+                "Data de criação da conta", "Nos perfis, abaixo do nome: data e hora exatas em que a conta foi criada. Contas muito antigas do musical.ly não têm", "Criada %s"});
         TABLES.put("fr", new String[]{
                 "TiktokPatchXposed", "Fil",
                 "Bloquer les publicités", "Dans le fil, au démarrage et dans les autres listes de vidéos",
@@ -372,7 +391,10 @@ final class I18n {
                 "Analyses", "Bloquer les traqueurs tiers", "Google/Firebase, Facebook et AppsFlyer ne collectent rien. Sans risque : le fil, la connexion et les recommandations ne changent pas", "Ne pas envoyer les analyses de TikTok", "Le journal d’événements de TikTok (ce que vous touchez, combien de temps vous regardez) n’est pas envoyé. Connexion et fil fonctionnent normalement, mais les recommandations apprennent moins et peuvent être moins personnelles",
                 "Publier l’original (jusqu’à 4K)", "Une vidéo publiée sans retouche est envoyée telle quelle, sans réencodage de TikTok ; les vidéos 4K peuvent être choisies dans la galerie. Garder le 2160p dépend du serveur de TikTok. Les métadonnées du fichier peuvent partir avec",
                 "Région de recommandations perso", "Les vidéos viennent d’un autre pays, la SIM reste dans la région ci-dessus. S’applique au redémarrage de TikTok", "Pays des recommandations", "Choisir",
-                "Réinitialiser tous les réglages", "Réinitialiser tous les réglages ?", "Tous les interrupteurs, filtres, la région et les couleurs reviennent à leurs valeurs par défaut. Exportez d’abord les réglages pour en garder une copie.", "Réglages réinitialisés"});
+                "Réinitialiser tous les réglages", "Réinitialiser tous les réglages ?", "Tous les interrupteurs, filtres, la région et les couleurs reviennent à leurs valeurs par défaut. Exportez d’abord les réglages pour en garder une copie.", "Réglages réinitialisés",
+                "Garder les messages retirés", "Quand quelqu’un retire un message dans un chat, il reste sur votre téléphone marqué « Retiré ». Seuls les messages déjà reçus sur le téléphone sont gardés", "Retiré",
+                "Pas de j’aime au double appui", "Appuyer deux fois sur une vidéo ne met plus de j’aime ; le bouton cœur fonctionne comme d’habitude",
+                "Date de création du compte", "Sur les profils, sous le nom : la date et l’heure exactes de création du compte. Les très anciens comptes musical.ly ne l’ont pas", "Créé le %s"});
         TABLES.put("it", new String[]{
                 "TiktokPatchXposed", "Feed",
                 "Blocca pubblicità", "Nel feed, all'avvio e in altri elenchi di video",
@@ -415,7 +437,10 @@ final class I18n {
                 "Analisi", "Blocca i tracker di terze parti", "Google/Firebase, Facebook e AppsFlyer non raccolgono nulla. Sicuro: feed, accesso e consigli non cambiano", "Non inviare le analisi di TikTok", "Il registro eventi di TikTok (cosa tocchi e quanto guardi) non viene inviato. Accesso e feed funzionano come sempre, ma i consigli imparano meno da te e possono essere meno personali",
                 "Carica l’originale (fino a 4K)", "Un video senza modifiche viene caricato come file originale, senza la ricodifica di TikTok; i video 4K si possono scegliere dalla galleria. Se TikTok mantiene il 2160p lo decide il suo server. I metadati del file possono essere inclusi",
                 "Regione dei consigli personale", "I video arrivano da un altro paese, la SIM resta nella regione sopra. Vale dopo il riavvio di TikTok", "Paese dei consigli", "Scegli",
-                "Ripristina tutte le impostazioni", "Ripristinare tutte le impostazioni?", "Tutti gli interruttori, i filtri, la regione e i colori tornano ai valori predefiniti. Esporta prima le impostazioni per conservarne una copia.", "Impostazioni ripristinate"});
+                "Ripristina tutte le impostazioni", "Ripristinare tutte le impostazioni?", "Tutti gli interruttori, i filtri, la regione e i colori tornano ai valori predefiniti. Esporta prima le impostazioni per conservarne una copia.", "Impostazioni ripristinate",
+                "Conserva i messaggi annullati", "Se qualcuno annulla l’invio di un messaggio in chat, resta sul tuo telefono segnato come «Annullato». Restano solo i messaggi già arrivati sul telefono", "Annullato",
+                "Niente Mi piace con doppio tocco", "Toccare due volte un video non mette più Mi piace; il pulsante del cuore funziona come sempre",
+                "Data di creazione dell’account", "Nei profili, sotto il nome: data e ora esatte in cui è stato creato l’account. I vecchissimi account musical.ly non ce l’hanno", "Creato il %s"});
         TABLES.put("pl", new String[]{
                 "TiktokPatchXposed", "Kanał",
                 "Blokuj reklamy", "W kanale, przy uruchamianiu i na innych listach filmów",
@@ -458,7 +483,10 @@ final class I18n {
                 "Analityka", "Blokuj zewnętrzne trackery", "Google/Firebase, Facebook i AppsFlyer nic nie zbierają. Bezpieczne: feed, logowanie i rekomendacje się nie zmieniają", "Nie wysyłaj analityki TikToka", "Dziennik zdarzeń TikToka (co klikasz i jak długo oglądasz) nie jest wysyłany. Logowanie i feed działają normalnie, ale rekomendacje mniej się uczą i mogą być mniej trafne",
                 "Wysyłaj oryginał (do 4K)", "Film bez edycji idzie jako sam plik, bez ponownego kodowania TikToka; filmy 4K można wybrać z galerii. Czy TikTok zachowa 2160p, decyduje jego serwer. Metadane pliku mogą zostać wysłane",
                 "Własny region rekomendacji", "Filmy pochodzą z innego kraju, a karta SIM zostaje w regionie powyżej. Działa po ponownym uruchomieniu TikToka", "Kraj rekomendacji", "Wybierz",
-                "Przywróć wszystkie ustawienia", "Przywrócić wszystkie ustawienia?", "Wszystkie przełączniki, filtry, region i kolory wrócą do domyślnych. Aby zachować kopię, najpierw wyeksportuj ustawienia.", "Ustawienia przywrócone"});
+                "Przywróć wszystkie ustawienia", "Przywrócić wszystkie ustawienia?", "Wszystkie przełączniki, filtry, region i kolory wrócą do domyślnych. Aby zachować kopię, najpierw wyeksportuj ustawienia.", "Ustawienia przywrócone",
+                "Zachowuj cofnięte wiadomości", "Gdy ktoś cofnie wysłanie wiadomości w czacie, zostanie ona u ciebie z oznaczeniem „Cofnięta”. Zachowywane są tylko wiadomości, które już dotarły na telefon", "Cofnięta",
+                "Bez polubienia podwójnym stuknięciem", "Podwójne stuknięcie w film już go nie polubi; przycisk serca działa jak zwykle",
+                "Data utworzenia konta", "Na profilach pod nazwą: dokładna data i godzina utworzenia konta. Bardzo stare konta musical.ly jej nie mają", "Utworzono %s"});
         TABLES.put("tr", new String[]{
                 "TiktokPatchXposed", "Akış",
                 "Reklamları engelle", "Akışta, açılışta ve diğer video listelerinde",
@@ -501,7 +529,10 @@ final class I18n {
                 "Analiz", "Üçüncü taraf izleyicileri engelle", "Google/Firebase, Facebook ve AppsFlyer hiçbir şey toplamaz. Güvenli: akış, giriş ve öneriler değişmez", "TikTok analizlerini gönderme", "TikTok’un olay kaydı (neye dokunduğun, ne kadar izlediğin) gönderilmez. Giriş ve akış normal çalışır, ama öneriler senden daha az öğrenir ve daha az kişisel olabilir",
                 "Orijinali yükle (4K’ya kadar)", "Düzenlenmemiş bir video TikTok’un yeniden kodlaması olmadan dosyanın kendisi olarak yüklenir; galeriden 4K video seçilebilir. 2160p’yi tutup tutmamaya TikTok sunucusu karar verir. Dosyanın meta verileri de gidebilir",
                 "Özel öneri bölgesi", "Videolar başka bir ülkeden gelir, SIM yukarıdaki bölgede kalır. TikTok yeniden başlatılınca geçerli olur", "Öneri ülkesi", "Seç",
-                "Tüm ayarları sıfırla", "Tüm ayarlar sıfırlansın mı?", "Tüm anahtarlar, filtreler, bölge ve renkler varsayılana döner. Bir kopya saklamak için önce ayarları dışa aktarın.", "Ayarlar sıfırlandı"});
+                "Tüm ayarları sıfırla", "Tüm ayarlar sıfırlansın mı?", "Tüm anahtarlar, filtreler, bölge ve renkler varsayılana döner. Bir kopya saklamak için önce ayarları dışa aktarın.", "Ayarlar sıfırlandı",
+                "Geri alınan mesajları sakla", "Biri sohbette bir mesajı geri aldığında mesaj telefonunda “Geri alındı” işaretiyle kalır. Yalnızca telefonuna zaten ulaşmış mesajlar saklanır", "Geri alındı",
+                "Çift dokunmayla beğeni yok", "Videoya çift dokunmak artık onu beğenmez; kalp düğmesi her zamanki gibi çalışır",
+                "Hesap oluşturma tarihi", "Profillerde adın altında hesabın oluşturulduğu tam tarih ve saat. Çok eski musical.ly hesaplarında yoktur", "Oluşturuldu: %s"});
         TABLES.put("id", new String[]{
                 "TiktokPatchXposed", "Feed",
                 "Blokir iklan", "Di feed, saat dibuka, dan di daftar video lainnya",
@@ -544,7 +575,10 @@ final class I18n {
                 "Analitik", "Blokir pelacak pihak ketiga", "Google/Firebase, Facebook, dan AppsFlyer tidak mengumpulkan apa pun. Aman: feed, masuk, dan rekomendasi tidak berubah", "Jangan kirim analitik TikTok", "Log peristiwa TikTok (yang Anda ketuk dan berapa lama menonton) tidak diunggah. Masuk dan feed berjalan biasa, tapi rekomendasi belajar lebih sedikit dari Anda dan bisa kurang personal",
                 "Unggah aslinya (hingga 4K)", "Video tanpa edit diunggah sebagai file aslinya, tanpa kompresi ulang TikTok; video 4K bisa dipilih dari galeri. Apakah TikTok mempertahankan 2160p diputuskan servernya. Metadata file bisa ikut terkirim",
                 "Wilayah rekomendasi sendiri", "Video berasal dari negara lain, sedangkan SIM tetap di wilayah di atas. Berlaku setelah TikTok dimulai ulang", "Negara rekomendasi", "Pilih",
-                "Setel ulang semua pengaturan", "Setel ulang semua pengaturan?", "Semua sakelar, filter, wilayah, dan warna kembali ke bawaan. Ekspor pengaturan terlebih dahulu untuk menyimpan salinan.", "Pengaturan disetel ulang"});
+                "Setel ulang semua pengaturan", "Setel ulang semua pengaturan?", "Semua sakelar, filter, wilayah, dan warna kembali ke bawaan. Ekspor pengaturan terlebih dahulu untuk menyimpan salinan.", "Pengaturan disetel ulang",
+                "Simpan pesan yang ditarik", "Saat seseorang menarik pesan di chat, pesan tetap ada di ponselmu dengan tanda “Ditarik”. Hanya pesan yang sudah sampai di ponsel yang bisa disimpan", "Ditarik",
+                "Tanpa suka dengan ketuk dua kali", "Mengetuk dua kali video tidak lagi menyukainya; tombol hati tetap berfungsi seperti biasa",
+                "Tanggal pembuatan akun", "Di profil, di bawah nama: tanggal dan waktu tepat akun dibuat. Akun musical.ly yang sangat lama tidak memilikinya", "Dibuat %s"});
         TABLES.put("ar", new String[]{
                 "TiktokPatchXposed", "الموجز", "حظر الإعلانات", "الإعلانات في الموجز وعند بدء التشغيل وقوائم الفيديو الأخرى", "إخفاء البث المباشر",
                 "البث المباشر في الموجز وزر LIVE", "إخفاء «أشخاص قد تعرفهم»", "الفيديوهات المقترحة من جهات اتصالك", "شريط التقدم في كل فيديو", "حتى في المقاطع القصيرة: يبقى الشريط مخفيًا هناك، اسحب على الحافة السفلية للفيديو",
@@ -616,7 +650,10 @@ final class I18n {
                 "التحليلات", "حظر المتتبعات الخارجية", "لا يجمع Google/Firebase وFacebook وAppsFlyer أي شيء. آمن: لا تتغير الخلاصة وتسجيل الدخول والتوصيات", "عدم إرسال تحليلات TikTok", "لا يُرفع سجل أحداث TikTok (ما تضغط عليه ومدة المشاهدة). يعمل تسجيل الدخول والخلاصة كالمعتاد، لكن التوصيات تتعلم منك أقل وقد تصبح أقل تخصيصًا",
                 "رفع الأصل (حتى 4K)", "يُرفع الفيديو غير المعدّل كملفه نفسه دون إعادة ترميز TikTok، ويمكن اختيار فيديوهات 4K من المعرض. خادم TikTok يقرر إن كان سيحتفظ بدقة 2160p. قد تُرسل بيانات الملف الوصفية معه",
                 "منطقة توصيات خاصة", "تأتي الفيديوهات من بلد آخر، وتبقى الشريحة في المنطقة أعلاه. يُطبَّق بعد إعادة تشغيل TikTok", "بلد التوصيات", "اختيار",
-                "إعادة تعيين جميع الإعدادات", "إعادة تعيين جميع الإعدادات؟", "ستعود كل المفاتيح والفلاتر والمنطقة والألوان إلى قيمها الافتراضية. صدّر الإعدادات أولًا للاحتفاظ بنسخة.", "تمت إعادة تعيين الإعدادات"});
+                "إعادة تعيين جميع الإعدادات", "إعادة تعيين جميع الإعدادات؟", "ستعود كل المفاتيح والفلاتر والمنطقة والألوان إلى قيمها الافتراضية. صدّر الإعدادات أولًا للاحتفاظ بنسخة.", "تمت إعادة تعيين الإعدادات",
+                "الاحتفاظ بالرسائل المحذوفة", "عندما يلغي شخص إرسال رسالة في الدردشة، تبقى على هاتفك مع علامة «محذوفة». يمكن الاحتفاظ فقط بالرسائل التي وصلت إلى هاتفك قبل حذفها", "محذوفة",
+                "بدون إعجاب بالنقر المزدوج", "النقر المزدوج على الفيديو لم يعد يضع إعجابًا؛ زر القلب يعمل كالمعتاد",
+                "تاريخ إنشاء الحساب", "في الملفات الشخصية: تاريخ ووقت إنشاء الحساب بالضبط تحت الاسم. لا يتوفر لحسابات musical.ly القديمة جدًا", "أُنشئ في %s"});
         TABLES.put("zh", new String[]{
                 "TiktokPatchXposed", "推荐", "屏蔽广告", "推荐流、启动时和其他视频列表中的广告", "隐藏直播", "推荐流中的直播和 LIVE 按钮", "隐藏“你可能认识的人”", "根据你的通讯录推荐的视频",
                 "所有视频都可拖动进度", "包括短视频：短视频上进度条不显示，在视频底部边缘左右拖动即可", "评论", "带评论转发", "转发视频时附上你自己的评论", "新版主页布局", "左对齐的主页，带横幅", "TikTok 隐藏功能",
@@ -662,7 +699,10 @@ final class I18n {
                 "数据分析", "屏蔽第三方追踪", "Google/Firebase、Facebook 和 AppsFlyer 不再收集任何数据。安全：推荐流、登录和推荐不受影响", "不发送 TikTok 分析数据", "不上传 TikTok 的事件日志（你点了什么、看了多久）。登录和推荐流照常，但推荐从你身上学到的更少，可能不那么贴合你",
                 "上传原文件（最高 4K）", "未编辑的视频直接上传原文件，不经 TikTok 重新编码；可以从相册选择 4K 视频。是否保留 2160p 由 TikTok 服务器决定。文件自带的元数据可能会一并上传",
                 "自定义推荐地区", "视频来自另一个国家，SIM 卡仍在上方选择的地区。重启 TikTok 后生效", "推荐国家", "选择",
-                "重置所有设置", "重置所有设置？", "所有开关、过滤、地区和颜色都将恢复默认。如需保留副本，请先导出设置。", "设置已重置"});
+                "重置所有设置", "重置所有设置？", "所有开关、过滤、地区和颜色都将恢复默认。如需保留副本，请先导出设置。", "设置已重置",
+                "保留撤回的消息", "对方在聊天中撤回消息后，消息仍留在你的手机上，并标为“已撤回”。只能保留已经收到的消息", "已撤回",
+                "双击不点赞", "双击视频不再点赞；红心按钮照常使用",
+                "账号创建日期", "在主页名字下方显示账号创建的确切日期和时间。很早的 musical.ly 账号没有此信息", "创建于 %s"});
     }
 
     private static volatile String[] current = TABLES.get("en");

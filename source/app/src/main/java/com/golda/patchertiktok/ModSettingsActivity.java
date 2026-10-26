@@ -461,6 +461,7 @@ public final class ModSettingsActivity extends Activity {
             new Setting(Category.PLAYBACK, S.GROUP_PLAYBACK, S.RESUME_POSITION, S.RESUME_POSITION_DESC, Prefs.RESUME_POSITION),
             new Setting(Category.PLAYBACK, S.GROUP_PLAYBACK, S.UNMUTE, S.UNMUTE_DESC, Prefs.UNMUTE),
             new Setting(Category.PLAYBACK, S.GROUP_PLAYBACK, S.SPEED_3X, S.SPEED_3X_DESC, Prefs.SPEED_3X),
+            new Setting(Category.PLAYBACK, S.GROUP_PLAYBACK, S.NO_DOUBLE_TAP_LIKE, S.NO_DOUBLE_TAP_LIKE_DESC, Prefs.NO_DOUBLE_TAP_LIKE),
             new Setting(Category.PLAYBACK, S.GROUP_SCREEN, S.REMEMBER_CLEAN, S.REMEMBER_CLEAN_DESC, Prefs.REMEMBER_CLEAN),
             new Setting(Category.PLAYBACK, S.GROUP_SCREEN, S.SEEKBAR, S.SEEKBAR_DESC, Prefs.SEEKBAR),
             new Setting(Category.PLAYBACK, S.GROUP_SCREEN, S.EXACT_TIME, S.EXACT_TIME_DESC, Prefs.EXACT_TIME),
@@ -474,8 +475,10 @@ public final class ModSettingsActivity extends Activity {
             new Setting(Category.INTERFACE, S.GROUP_SCREEN, S.BURN_IN, S.BURN_IN_DESC, Prefs.BURN_IN),
             new Setting(Category.INTERFACE, S.GROUP_SCREEN, S.KEEP_BRIGHTNESS, S.KEEP_BRIGHTNESS_DESC, Prefs.KEEP_BRIGHTNESS),
             new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.NEW_PROFILE, S.NEW_PROFILE_DESC, Prefs.NEW_PROFILE),
+            new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.ACCOUNT_DATE, S.ACCOUNT_DATE_DESC, Prefs.ACCOUNT_DATE),
             new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.HIDE_INBOX_STORIES, S.HIDE_INBOX_STORIES_DESC, Prefs.HIDE_INBOX_STORIES),
             new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.MESSAGE_TIME, S.MESSAGE_TIME_DESC, Prefs.MESSAGE_TIME),
+            new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.KEEP_UNSENT, S.KEEP_UNSENT_DESC, Prefs.KEEP_UNSENT),
             new Setting(Category.INTERFACE, S.GROUP_PROFILE, S.READ_ALL, S.READ_ALL_DESC, Prefs.READ_ALL),
             new Setting(Category.SOCIAL, null, S.COPY_COMMENT, S.COPY_COMMENT_DESC, Prefs.COPY_COMMENT_TEXT),
             new Setting(Category.SOCIAL, null, S.AUTO_TRANSLATE, S.AUTO_TRANSLATE_DESC, Prefs.AUTO_TRANSLATE),
@@ -797,7 +800,8 @@ public final class ModSettingsActivity extends Activity {
             {"friend card", "ACQUAINTANCES"}, {"unmute", "UNMUTE"}, {"font", "FONT"}, {"privacy", "SECTION_PRIVACY"},
             {"refresh rate", "REFRESH_RATE"}, {"story download", "STORY_DOWNLOAD"}, {"avatar download", "AVATAR_DOWNLOAD"},
             {"message time", "MESSAGE_TIME"}, {"chat menu", "CHAT_STICKER"}, {"hd upload", "HD_UPLOAD"},
-            {"read receipts", "GHOST_READ"}, {"read all", "READ_ALL"}};
+            {"read receipts", "GHOST_READ"}, {"read all", "READ_ALL"},
+            {"unsent messages", "KEEP_UNSENT"}, {"double tap like", "NO_DOUBLE_TAP_LIKE"}};
 
     private View statusPage() {
         Page page = new Page(I18n.get(S.STATUS_TITLE), true);
@@ -2618,7 +2622,7 @@ public final class ModSettingsActivity extends Activity {
             Prefs.UNMUTE, Prefs.SELF_REPOST, Prefs.HD_UPLOAD, Prefs.GHOST_ONLINE, Prefs.GHOST_READ,
             Prefs.COMMENT_PHOTOS, Prefs.NO_HASHTAG_LIMIT, Prefs.CAMERA_EXTRAS, Prefs.HIDE_ROOT, Prefs.PIP_FEED,
             Prefs.PREFER_H264, Prefs.PHOTO_BEST, Prefs.NO_MOTION_SENSORS, Prefs.NO_TIKTOK_ANALYTICS, Prefs.UPLOAD_ORIGINAL,
-            Prefs.FEED_REGION_OWN};
+            Prefs.FEED_REGION_OWN, Prefs.KEEP_UNSENT, Prefs.NO_DOUBLE_TAP_LIKE, Prefs.ACCOUNT_DATE};
 
     /**
      * A small mark after a row's title: an outlined "Beta" for settings under test, a plain
