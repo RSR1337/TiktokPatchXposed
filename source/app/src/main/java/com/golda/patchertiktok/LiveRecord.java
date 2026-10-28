@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.util.TypedValue;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -41,11 +44,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Records a LIVE. The room's streams are in its "stream_data" JSON, which TikTok's own LIVE model
- * hands to the player through {@code LiveCoreSDKData.PullData}; the newest one read is the LIVE
- * on screen. A REC button in the LIVE room copies that stream's FLV into Movies/TikTok until it is
- * tapped again, the LIVE ends or the room is left. Nothing is sent to TikTok: the stream is the
- * one the player already pulls from TikTok's CDN.
+ * Records a LIVE. The room on screen keeps its streams in a "stream_data" JSON; the newest one
+ * TikTok's LIVE model hands to the player is kept in case the room can't be read. A REC button in
+ * the LIVE room copies the chosen stream's FLV until it is tapped again, the LIVE ends or the room
+ * is left, then saves it as MP4 in Movies/TikTok (the FLV stays if that fails). Nothing is sent to
+ * TikTok: the stream is the one the player already pulls from TikTok's CDN.
  */
 final class LiveRecord {
     private static final String[] PULL_DATA = {
@@ -54,6 +57,7 @@ final class LiveRecord {
     };
     /** The LIVE room; it lives in TikTok's LIVE add-on, so it is matched by name. */
     private static final String ROOM = "com.ss.android.ugc.aweme.live.LivePlayActivity";
+    private static final String ROOM_MODEL = "com.bytedance.android.livesdkapi.depend.model.live.Room";
     private static final String TAG = "tiktokpatchxposed.liveRecord";
     /** A stream read longer ago than this belongs to a LIVE that is no longer on screen. */
     private static final long FRESH_MS = 15 * 60_000L;
@@ -95,10 +99,7 @@ final class LiveRecord {
                 }
             });
         }
-        if (hooks == 0) {
-            RuntimeLog.log("LIVE record unavailable: stream model not found");
-            return;
-        }
+        if (hooks == 0) RuntimeLog.log("LIVE record: stream model not found, reading rooms only");
         Hooks.findAndHook(Activity.class, "onResume", new Hooks.Hook() {
             @Override protected void after(Hooks.Call param) {
                 Activity activity = (Activity) param.thisObject;
@@ -176,7 +177,10 @@ final class LiveRecord {
         TextView view = button.get();
         if (view == null) return;
         Recorder active = recorder;
-        view.setText(active == null ? "\u25CF REC" : "\u25A0 " + LiveStreams.elapsed(SystemClock.elapsedRealtime() - active.startedAt));
+        long stoppedAt = active == null ? 0 : active.stoppedAt;
+        long end = stoppedAt > 0 ? stoppedAt : SystemClock.elapsedRealtime();
+        view.setText(active == null ? "\u25CF REC"
+                : "\u25A0 " + LiveStreams.elapsed(end - active.startedAt) + (stoppedAt > 0 ? " \u2026" : ""));
         view.setTextColor(active == null ? 0xFFFFFFFF : 0xFFFF4D4D);
         boolean faded = active != null && SystemClock.elapsedRealtime() - Math.max(active.startedAt, touchedAt) > FADE_MS;
         fade(view, faded ? FADED : 1f);
@@ -259,8 +263,8 @@ final class LiveRecord {
             active.stop();
             return;
         }
-        String data = freshStream();
-        List<LiveStreams.Option> choices = data == null ? new ArrayList<>() : LiveStreams.choices(options(data));
+        List<LiveStreams.Option> fromRoom = choices(roomStream(activity));
+        List<LiveStreams.Option> choices = fromRoom.isEmpty() ? choices(freshStream()) : fromRoom;
         if (choices.isEmpty()) {
             toast(activity, I18n.get(I18n.S.LIVE_REC_NONE));
             return;
@@ -280,9 +284,49 @@ final class LiveRecord {
         rows.add(copy);
         String link = (best != null ? best : choices.get(0)).flv;
         DownloadSheet.show(activity, I18n.get(I18n.S.LIVE_REC_TITLE), I18n.get(I18n.S.LIVE_REC_PICK), rows, which -> {
-            if (which >= 0 && which < choices.size()) start(activity, choices.get(which).flv);
+            if (which >= 0 && which < choices.size()) start(activity, choices.get(which));
             else if (which == choices.size()) copyLink(activity, link);
         }, null);
+    }
+
+    private static List<LiveStreams.Option> choices(String data) {
+        return data == null ? new ArrayList<>() : LiveStreams.choices(options(data));
+    }
+
+    static String roomStream(Activity activity) {
+        try {
+            Object fragment = activity;
+            for (int depth = 0; depth < 4; depth++) {
+                Object next = Reflect.call(fragment, "getCurrentFragment");
+                if (next == null || next == fragment) break;
+                fragment = next;
+            }
+            Object room = fragment == activity ? null : room(fragment);
+            if (room == null) return null;
+            Object data = Reflect.call(room, "getMultiStreamData");
+            if (!(data instanceof String)) {
+                Object pull = Reflect.get(Reflect.get(Reflect.get(room, "streamUrl"), "liveCoreSDKData"), "pullData");
+                data = Reflect.get(pull, "streamData");
+            }
+            return data instanceof String && ((String) data).contains("flv") ? (String) data : null;
+        } catch (Throwable error) {
+            RuntimeLog.log("LIVE record: room stream unreadable: " + error);
+            return null;
+        }
+    }
+
+    private static Object room(Object fragment) {
+        for (Class<?> type = fragment.getClass(); type != null && !type.getName().startsWith("android"); type = type.getSuperclass()) {
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isStatic(field.getModifiers()) || !ROOM_MODEL.equals(field.getType().getName())) continue;
+                try {
+                    field.setAccessible(true);
+                    Object room = field.get(fragment);
+                    if (room != null) return room;
+                } catch (Throwable ignored) { }
+            }
+        }
+        return null;
     }
 
     private static void copyLink(Activity activity, String url) {
@@ -292,9 +336,9 @@ final class LiveRecord {
         toast(activity, I18n.get(I18n.S.LIVE_REC_COPIED));
     }
 
-    private static synchronized void start(Activity activity, String url) {
+    private static synchronized void start(Activity activity, LiveStreams.Option option) {
         if (recorder != null) return;
-        Recorder next = new Recorder(activity, url);
+        Recorder next = new Recorder(activity, option);
         recorder = next;
         Thread thread = new Thread(next, "tpx-live-record");
         thread.setDaemon(true);
@@ -366,22 +410,28 @@ final class LiveRecord {
 
     // ---- Recording -----------------------------------------------------------------------
 
-    /** Copies the FLV stream into a pending MediaStore row, published when the copy ends. */
+    /** Copies the FLV stream into a pending MediaStore row, then publishes it as MP4, or as FLV if that fails. */
     private static final class Recorder implements Runnable {
         final WeakReference<Activity> owner;
         final Context app;
         final String url;
+        final int width;
+        final int height;
         final long startedAt = SystemClock.elapsedRealtime();
+        volatile long stoppedAt;
         private volatile boolean stopping;
         private volatile HttpURLConnection connection;
 
-        Recorder(Activity activity, String url) {
+        Recorder(Activity activity, LiveStreams.Option option) {
             this.owner = new WeakReference<>(activity);
             this.app = activity.getApplicationContext();
-            this.url = url;
+            this.url = option.flv;
+            this.width = option.width;
+            this.height = option.height;
         }
 
         void stop() {
+            if (stoppedAt == 0) stoppedAt = SystemClock.elapsedRealtime();
             stopping = true;
             HttpURLConnection open = connection;
             // A blocked read ends at once when the connection goes away.
@@ -395,16 +445,11 @@ final class LiveRecord {
             Uri row = null;
             long total = 0;
             boolean saved = false;
+            String time = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(new Date());
             try {
                 connection = open(url);
                 if (stopping) throw new IOException("stopped before start");
-                ContentValues values = new ContentValues();
-                String time = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.ROOT).format(new Date());
-                values.put(MediaStore.MediaColumns.DISPLAY_NAME, "TikTok_LIVE_" + time + ".flv");
-                values.put(MediaStore.MediaColumns.MIME_TYPE, "video/x-flv");
-                values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/TikTok");
-                values.put(MediaStore.MediaColumns.IS_PENDING, 1);
-                row = resolver.insert(MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values);
+                row = pending(resolver, "TikTok_LIVE_" + time + ".flv", "video/x-flv");
                 if (row == null) throw new IOException("MediaStore insert failed");
                 try (InputStream input = connection.getInputStream(); OutputStream output = resolver.openOutputStream(row, "w")) {
                     if (output == null) throw new IOException("MediaStore stream unavailable");
@@ -421,7 +466,14 @@ final class LiveRecord {
                         if (!stopping || total == 0) throw error;
                     }
                 }
+                if (stoppedAt == 0) stoppedAt = SystemClock.elapsedRealtime();
+                disconnect();
                 if (total < 64 * 1024) throw new IOException("stream ended at once");
+                Uri mp4 = mp4(resolver, row, time);
+                if (mp4 != null) {
+                    try { resolver.delete(row, null, null); } catch (RuntimeException ignored) { }
+                    row = mp4;
+                }
                 ContentValues publish = new ContentValues();
                 publish.put(MediaStore.MediaColumns.IS_PENDING, 0);
                 saved = resolver.update(row, publish, null, null) == 1;
@@ -431,13 +483,50 @@ final class LiveRecord {
                 if (row != null && !saved) {
                     try { resolver.delete(row, null, null); } catch (RuntimeException ignored) { }
                 }
-                HttpURLConnection open = connection;
-                if (open != null) {
-                    try { open.disconnect(); } catch (Throwable ignored) { }
-                }
+                disconnect();
                 RuntimeLog.log("LIVE record: " + (saved ? "saved " : "dropped ") + total + " bytes");
                 finished(this, app, saved);
             }
+        }
+
+        private Uri mp4(ContentResolver resolver, Uri flv, String time) {
+            Uri row = null;
+            boolean done = false;
+            long started = SystemClock.elapsedRealtime();
+            try {
+                row = pending(resolver, "TikTok_LIVE_" + time + ".mp4", "video/mp4");
+                if (row == null) return null;
+                try (ParcelFileDescriptor out = resolver.openFileDescriptor(row, "rw")) {
+                    if (out == null) return null;
+                    FlvRemux.remux(() -> resolver.openInputStream(flv), out.getFileDescriptor(), width, height);
+                }
+                done = true;
+                RuntimeLog.log("LIVE record: MP4 written in " + (SystemClock.elapsedRealtime() - started) + " ms");
+                return row;
+            } catch (Throwable error) {
+                RuntimeLog.log("LIVE record: kept FLV, MP4 failed: " + error);
+                return null;
+            } finally {
+                if (!done && row != null) {
+                    try { resolver.delete(row, null, null); } catch (RuntimeException ignored) { }
+                }
+            }
+        }
+
+        private void disconnect() {
+            HttpURLConnection open = connection;
+            if (open != null) {
+                try { open.disconnect(); } catch (Throwable ignored) { }
+            }
+        }
+
+        private static Uri pending(ContentResolver resolver, String name, String mime) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
+            values.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/TikTok");
+            values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+            return resolver.insert(MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values);
         }
 
         private static boolean flv(byte[] head, int length) {

@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 /**
  * Picks what a LIVE recording saves. TikTok lists a LIVE's streams per quality ("origin", "uhd",
  * "hd", "sd", "ld", "ao" for audio only), each with an FLV link and its resolution and codec in
- * "sdk_params". The recording is a plain copy of the FLV stream, so the best stream is the largest
- * H.264 one with an FLV link: H.264 FLV plays in common players, HEVC in FLV often does not.
+ * "sdk_params". The best stream is the largest H.264 one with an FLV link, as it still plays in
+ * common players when the recording has to stay FLV.
  */
 final class LiveStreams {
     static final class Option {
@@ -73,7 +73,7 @@ final class LiveStreams {
         }
         String codec = codec(option);
         if (codec != null) text.append(codec).append(" · ");
-        return text.append("FLV").toString();
+        return text.append("MP4").toString();
     }
 
     private static String codec(Option option) {
