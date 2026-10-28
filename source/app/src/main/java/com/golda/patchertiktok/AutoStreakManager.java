@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 final class AutoStreakManager {
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static final AtomicBoolean RUNNING = new AtomicBoolean();
-    private static final Runnable CHECK = AutoStreakManager::startCheck;
+    private static final Runnable CHECK = Safe.run("auto streaks", AutoStreakManager::startCheck);
     private static final long MIN_CHECK_INTERVAL_MS = 300_000L;
     private static final java.util.Random RANDOM = new java.util.Random();
     private static volatile Application context;
@@ -49,7 +49,7 @@ final class AutoStreakManager {
         lastEnabled = enabled();
         lastTime = Prefs.number(Prefs.STREAK_TIME);
         lastExcluded = Prefs.on(Prefs.STREAK_ONLY_SELECTED) + Prefs.text(Prefs.STREAK_EXCLUDED);
-        Prefs.listen(() -> MAIN.post(AutoStreakManager::onSettingsChanged));
+        Prefs.listen(() -> MAIN.post(Safe.run("auto streaks", AutoStreakManager::onSettingsChanged)));
         app.registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
             private int started;
 

@@ -75,7 +75,7 @@ final class InboxReadAll {
         tab.setOnLongClickListener(view -> {
             if (!Prefs.on(Prefs.READ_ALL)) return false;
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-            if (RUNNING.compareAndSet(false, true)) new Thread(() -> offer(view), "tpx-read-all").start();
+            if (RUNNING.compareAndSet(false, true)) new Thread(Safe.run("read all", () -> offer(view)), "tpx-read-all").start();
             return true;
         });
     }
@@ -98,7 +98,7 @@ final class InboxReadAll {
             RUNNING.set(false);
         }
         Batch ready = batch;
-        MAIN.post(() -> show(tab, ready));
+        MAIN.post(Safe.run("read all", () -> show(tab, ready)));
     }
 
     private static Batch load() throws ReflectiveOperationException {
@@ -137,7 +137,7 @@ final class InboxReadAll {
             return;
         }
         confirm(activity, batch.unread, () -> {
-            if (RUNNING.compareAndSet(false, true)) new Thread(() -> mark(tab, batch), "tpx-read-all").start();
+            if (RUNNING.compareAndSet(false, true)) new Thread(Safe.run("read all", () -> mark(tab, batch)), "tpx-read-all").start();
         });
     }
 
@@ -202,10 +202,10 @@ final class InboxReadAll {
         if (activity.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)) {
             button.setBackgroundResource(ripple.resourceId);
         }
-        button.setOnClickListener(view -> {
+        button.setOnClickListener(Safe.click("read all", view -> {
             dialog.dismiss();
             if (action != null) action.run();
-        });
+        }));
         holder.addView(button, new android.widget.LinearLayout.LayoutParams(-1, dp(density, 50)));
         return holder;
     }
@@ -232,7 +232,7 @@ final class InboxReadAll {
     }
 
     private static void toast(View tab, String text) {
-        MAIN.post(() -> Toast.makeText(tab.getContext(), text, Toast.LENGTH_SHORT).show());
+        MAIN.post(Safe.run("read all", () -> Toast.makeText(tab.getContext(), text, Toast.LENGTH_SHORT).show()));
     }
 
     /** Classes already checked for the bulk method, with the answer. */

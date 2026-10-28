@@ -130,6 +130,15 @@ final class ChatMenu {
             private int frames;
 
             @Override public boolean onPreDraw() {
+                try {
+                    return guardedPreDraw();
+                } catch (Throwable error) {
+                    Safe.log("chat menu", error);
+                    return true;
+                }
+            }
+
+            private boolean guardedPreDraw() {
                 ViewGroup menu = menu(decor, count);
                 if (menu == null && ++frames < 40) return true;
                 ViewTreeObserver live = observer.isAlive() ? observer : decor.getViewTreeObserver();
@@ -243,12 +252,12 @@ final class ChatMenu {
             title.setPadding(label.getTotalPaddingLeft(), 0, 0, 0);
             row.addView(title, new LinearLayout.LayoutParams(0, -2, 1f));
             if (hasRipple) row.setBackgroundResource(ripple.resourceId);
-            row.setOnClickListener(view -> {
+            row.setOnClickListener(Safe.click("chat menu", view -> {
                 item.action.run();
                 // TikTok's menu closes on Back, like on a tap outside it.
                 activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK));
                 activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK));
-            });
+            }));
             block.addView(row, new LinearLayout.LayoutParams(-1, height));
         }
         int total = height * rows.size();

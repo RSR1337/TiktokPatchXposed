@@ -69,7 +69,7 @@ final class RenderedAdSkip {
         if (activity == null || activity.isFinishing() || !activity.hasWindowFocus()) return;
         Hooks.setExtra(aweme, SKIPPED, true);
         View decor = activity.getWindow().getDecorView();
-        decor.postDelayed(() -> swipe(decor), 80L);
+        decor.postDelayed(Safe.run("ad skip", () -> swipe(decor)), 80L);
     }
 
     private static void swipe(View view) {

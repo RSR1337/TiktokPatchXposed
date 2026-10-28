@@ -66,7 +66,7 @@ final class CleanScreen {
                     // TikTok's reset for the next video: replay the user's own event once it has settled.
                     Object owner = param.thisObject;
                     Object replay = enterEvent;
-                    MAIN.postDelayed(() -> replay(dispatch, owner, replay), 200);
+                    MAIN.postDelayed(Safe.run("clear display", () -> replay(dispatch, owner, replay)), 200);
                 }
             }
         });

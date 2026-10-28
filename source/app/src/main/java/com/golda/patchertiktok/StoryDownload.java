@@ -45,7 +45,7 @@ final class StoryDownload {
                 @Override protected void after(Hooks.Call param) {
                     if (!Prefs.on(Prefs.STORY_DOWNLOAD) || open || !Touch.pressing()) return;
                     Object component = param.thisObject;
-                    MAIN.postDelayed(() -> held(component), EXTRA_HOLD_MS);
+                    MAIN.postDelayed(Safe.run("story download", () -> held(component)), EXTRA_HOLD_MS);
                 }
             });
             hooks++;

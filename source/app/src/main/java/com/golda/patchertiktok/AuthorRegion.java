@@ -92,10 +92,18 @@ final class AuthorRegion {
                 @Override public void onTextChanged(CharSequence text, int start, int before, int count) { }
 
                 @Override public void afterTextChanged(android.text.Editable text) {
+                    try {
+                        guardedAfterTextChanged(text);
+                    } catch (Throwable error) {
+                        Safe.log("author region", error);
+                    }
+                }
+
+                private void guardedAfterTextChanged(android.text.Editable text) {
                     // Our own write is not news.
                     if (label.getText().toString().equals(Hooks.getExtra(label, WRITTEN))) return;
                     if (Hooks.getExtra(label, OWNER) == null) Hooks.setExtra(label, FLAG, null);
-                    label.post(() -> refresh(label));
+                    label.post(Safe.run("author region", () -> refresh(label)));
                 }
             });
         }
@@ -152,9 +160,9 @@ final class AuthorRegion {
                     if (value == null || !profileWanted()) return;
                     profileUser = new java.lang.ref.WeakReference<>(value);
                     // The header can bind before or after the user arrives; look again shortly.
-                    MAIN.post(AuthorRegion::markProfile);
-                    MAIN.postDelayed(AuthorRegion::markProfile, 400);
-                    MAIN.postDelayed(AuthorRegion::markProfile, 1_200);
+                    MAIN.post(Safe.run("author region", AuthorRegion::markProfile));
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 400);
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 1_200);
                 }
             });
         }
@@ -171,7 +179,7 @@ final class AuthorRegion {
                         return;
                     }
                     markProfile();
-                    MAIN.postDelayed(AuthorRegion::markProfile, 300);
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 300);
                 }
             });
         }
@@ -233,7 +241,7 @@ final class AuthorRegion {
         };
         // Now if the label is already bound, and once more after the pending layout pass.
         if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) mark.run();
-        root.post(mark);
+        root.post(Safe.run("author region", mark));
     }
 
     private static String region(Object aweme) {

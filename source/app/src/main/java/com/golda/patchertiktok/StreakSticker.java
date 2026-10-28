@@ -115,7 +115,7 @@ final class StreakSticker {
             if (args == null) return null;
             AtomicReference<Throwable> failure = new AtomicReference<>();
             CountDownLatch done = new CountDownLatch(1);
-            MAIN.post(() -> {
+            MAIN.post(Safe.run("streak sticker", () -> {
                 try {
                     method.invoke(service, args);
                 } catch (Throwable error) {
@@ -123,7 +123,7 @@ final class StreakSticker {
                 } finally {
                     done.countDown();
                 }
-            });
+            }));
             if (!done.await(10, TimeUnit.SECONDS)) return Boolean.FALSE;
             if (failure.get() != null) {
                 RuntimeLog.log("streak sticker failed: " + failure.get().getClass().getSimpleName());

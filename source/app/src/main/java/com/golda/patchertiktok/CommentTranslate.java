@@ -50,7 +50,7 @@ final class CommentTranslate {
     private static Handler handler;
     private static boolean scheduled;
     private static Anchors anchors;
-    private static final Runnable DRAIN = CommentTranslate::drain;
+    private static final Runnable DRAIN = Safe.run("comment translation", CommentTranslate::drain);
 
     private CommentTranslate() { }
 

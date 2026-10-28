@@ -22,7 +22,7 @@ final class Module {
     static void load(String packageName, String processName, ClassLoader loader) {
         if (!targets(packageName) || !LOADED.compareAndSet(false, true)) return;
         boolean main = packageName.equals(processName);
-        if (main) SafeMode.enter(packageName);
+        if (main) run("safe mode", () -> SafeMode.enter(packageName));
 
         if (main && !SafeMode.active()) {
             // These hooks read their toggle on every call, so they are safe before settings load.
@@ -58,7 +58,7 @@ final class Module {
                 // TikTok loads and caches its fonts while attaching, so the font goes in first.
                 if (!main || !(param.args[0] instanceof Context)) return;
                 Context base = (Context) param.args[0];
-                Prefs.load(base);
+                run("settings", () -> Prefs.load(base));
                 if (Prefs.on(Prefs.FONT) && !SafeMode.active()) {
                     run("code index", () -> Discovery.init(base));
                     run("font", () -> FontSwap.install(base, loader));
@@ -73,14 +73,15 @@ final class Module {
 
     /** Runs once the Application context exists, before TikTok's own onCreate. */
     private static void startup(Application app, ClassLoader loader, boolean main) {
-        Prefs.load(app);
-        if (main) RuntimeLog.attach(app);
+        // Every step goes through run(): one that fails must not stop the ones after it.
+        run("settings", () -> Prefs.load(app));
+        if (main) run("log", () -> RuntimeLog.attach(app));
         if (main) run("crash log", () -> CrashLog.install(app));
         if (main && SafeMode.active()) {
             safeStartup(app, loader);
             return;
         }
-        if (main) Overlay.settingsLoaded();
+        if (main) run("overlay settings", Overlay::settingsLoaded);
         if (main) run("accent color", () -> {
             AccentColor.install();
             AccentColor.installFor(app);
@@ -139,9 +140,9 @@ final class Module {
         run("seekbar", () -> Seekbar.install(loader));
         run("settings row", () -> SettingsEntry.install(app, loader));
         run("auto streaks", () -> AutoStreakManager.install(app, loader));
-        Discovery.release();
+        run("code index release", Discovery::release);
         RuntimeLog.log(BuildConfig.VERSION_NAME + " started in " + app.getPackageName());
-        SafeMode.started();
+        run("safe mode", SafeMode::started);
     }
 
     /**
@@ -153,10 +154,10 @@ final class Module {
         run("language", () -> I18n.use(app.getResources().getConfiguration().getLocales().get(0)));
         run("code index", () -> Discovery.init(app));
         run("settings row", () -> SettingsEntry.install(app, loader));
-        Discovery.release();
-        SafeMode.started();
-        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() ->
-                android.widget.Toast.makeText(app, I18n.get(I18n.S.SAFE_MODE_SHORT), android.widget.Toast.LENGTH_LONG).show(), 3_000L);
+        run("code index release", Discovery::release);
+        run("safe mode", SafeMode::started);
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(Safe.run("safe mode notice", () ->
+                android.widget.Toast.makeText(app, I18n.get(I18n.S.SAFE_MODE_SHORT), android.widget.Toast.LENGTH_LONG).show()), 3_000L);
     }
 
     private static void run(String name, Runnable task) {
@@ -164,7 +165,14 @@ final class Module {
         try {
             task.run();
         } catch (Throwable error) {
-            FeatureStatus.failed(name, FeatureStatus.describe(error));
+            // Whatever goes wrong here must not stop the features after this one.
+            String reason;
+            try {
+                reason = FeatureStatus.describe(error);
+            } catch (Throwable broken) {
+                reason = error.getClass().getSimpleName();
+            }
+            FeatureStatus.failed(name, reason);
             RuntimeLog.log(name + " unavailable: " + error);
         } finally {
             FeatureStatus.end();

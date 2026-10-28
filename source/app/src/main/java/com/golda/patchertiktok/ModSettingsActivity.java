@@ -556,10 +556,10 @@ public final class ModSettingsActivity extends Activity {
         ImageView moreChevron = new ImageView(this);
         moreChevron.setImageDrawable(new Glyph(Glyph.Kind.CHEVRON, palette.chevron, dp(20)));
         more.addView(moreChevron, new LinearLayout.LayoutParams(dp(20), dp(20)));
-        more.setOnClickListener(view -> {
+        more.setOnClickListener(Safe.click("settings", view -> {
             hideKeyboard(view);
             push(morePage(), true);
-        });
+        }));
 
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
@@ -601,7 +601,7 @@ public final class ModSettingsActivity extends Activity {
         LinearLayout help = page.card();
         LinearLayout report = row(help);
         texts(report, I18n.get(S.BUG_REPORT), I18n.get(S.BUG_REPORT_DESC));
-        report.setOnClickListener(view -> openSheet(reportSheet()));
+        report.setOnClickListener(Safe.click("settings", view -> openSheet(reportSheet())));
         navigation(help, I18n.get(S.RESET_ALL), null, view -> openSheet(resetSheet()));
         return page.root;
     }
@@ -616,14 +616,14 @@ public final class ModSettingsActivity extends Activity {
         texts(info, I18n.get(S.RESET_CONFIRM), I18n.get(S.RESET_CONFIRM_TEXT));
         LinearLayout reset = row(content);
         texts(reset, I18n.get(S.RESET_ALL), null);
-        reset.setOnClickListener(view -> {
+        reset.setOnClickListener(Safe.click("settings", view -> {
             closeSheet();
             Prefs.reset();
             android.widget.Toast.makeText(this, I18n.get(S.RESET_DONE), android.widget.Toast.LENGTH_SHORT).show();
-        });
+        }));
         LinearLayout cancel = row(content);
         texts(cancel, getString(android.R.string.cancel), null);
-        cancel.setOnClickListener(view -> closeSheet());
+        cancel.setOnClickListener(Safe.click("settings", view -> closeSheet()));
         return content;
     }
 
@@ -633,7 +633,7 @@ public final class ModSettingsActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         LinearLayout save = row(content);
         texts(save, I18n.get(S.BACKUP_SAVE_FILE), REPORT_FILE);
-        save.setOnClickListener(view -> {
+        save.setOnClickListener(Safe.click("settings", view -> {
             closeSheet();
             Intent create = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                     .setType("text/plain").putExtra(Intent.EXTRA_TITLE, REPORT_FILE);
@@ -642,20 +642,20 @@ public final class ModSettingsActivity extends Activity {
             } catch (RuntimeException unavailable) {
                 copyReport();
             }
-        });
+        }));
         LinearLayout copy = row(content);
         texts(copy, I18n.get(S.BACKUP_COPY), null);
-        copy.setOnClickListener(view -> {
+        copy.setOnClickListener(Safe.click("settings", view -> {
             closeSheet();
             copyReport();
-        });
+        }));
         return content;
     }
 
     private static final String REPORT_FILE = "TiktokPatchXposed-report.txt";
 
     private void copyReport() {
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             String text = BugReport.build(this);
             runOnUiThread(() -> {
                 android.content.ClipboardManager clipboard = getSystemService(android.content.ClipboardManager.class);
@@ -671,7 +671,7 @@ public final class ModSettingsActivity extends Activity {
                 android.widget.Toast.makeText(this, I18n.get(done ? S.REPORT_COPIED : S.DL_FAILED),
                         android.widget.Toast.LENGTH_SHORT).show();
             });
-        }, "tpx-report").start();
+        }), "tpx-report").start();
     }
 
     /** "Module is running · TikTok 47.4.3 · 47 of 115 on", with the state dot; opens the feature status. */
@@ -682,10 +682,10 @@ public final class ModSettingsActivity extends Activity {
         line.setBackground(new RippleDrawable(ColorStateList.valueOf(palette.pressed), null, rounded(0xFFFFFFFF, dp(10))));
         line.setClickable(true);
         line.setFocusable(true);
-        line.setOnClickListener(view -> {
+        line.setOnClickListener(Safe.click("settings", view -> {
             hideKeyboard(view);
             push(statusPage(), true);
-        });
+        }));
         View dot = new View(this);
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
@@ -841,10 +841,10 @@ public final class ModSettingsActivity extends Activity {
         LinearLayout.LayoutParams chevronParams = new LinearLayout.LayoutParams(dp(18), dp(18));
         chevronParams.setMarginStart(dp(10));
         row.addView(chevron, chevronParams);
-        row.setOnClickListener(view -> {
+        row.setOnClickListener(Safe.click("settings", view -> {
             hideKeyboard(view);
             push(categoryPage(category), true);
-        });
+        }));
         TextView regionValue = value;
         Meter dots = meter;
         Runnable refresh = () -> {
@@ -1211,9 +1211,9 @@ public final class ModSettingsActivity extends Activity {
             if (choice == 2) {
                 // The note under "From a file" picks a new file; the row itself selects the saved one.
                 View note = texts.getChildCount() > 1 ? texts.getChildAt(texts.getChildCount() - 1) : null;
-                if (note != null) note.setOnClickListener(view -> pickFont());
+                if (note != null) note.setOnClickListener(Safe.click("settings", view -> pickFont()));
             }
-            row.setOnClickListener(view -> {
+            row.setOnClickListener(Safe.click("settings", view -> {
                 row.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
                 if (choice == 2 && !(FontSwap.file(this).isFile() && !Prefs.text(Prefs.FONT_FILE).isEmpty())) {
                     pickFont();
@@ -1222,7 +1222,7 @@ public final class ModSettingsActivity extends Activity {
                 Prefs.set(Prefs.FONT, choice != 0);
                 if (choice != 0) Prefs.setText(Prefs.FONT_SOURCE, choice == 2 ? FontSwap.SOURCE_FILE : FontSwap.SOURCE_SYSTEM);
                 render[0].run();
-            });
+            }));
         }
         render[0].run();
         fontChanged = () -> {
@@ -1289,12 +1289,12 @@ public final class ModSettingsActivity extends Activity {
             ImageView mark = new ImageView(this);
             row.addView(mark, new LinearLayout.LayoutParams(dp(22), dp(22)));
             marks.add(mark);
-            row.setOnClickListener(view -> {
+            row.setOnClickListener(Safe.click("settings", view -> {
                 row.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
                 Prefs.setNumber(key, value);
                 if (picked != null) picked.run();
                 render.run();
-            });
+            }));
         }
         TextView footer = new TextView(this);
         footer.setText(I18n.get(note));
@@ -1342,17 +1342,17 @@ public final class ModSettingsActivity extends Activity {
         }
         if (request == SAVE_REPORT) {
             Uri target = data.getData();
-            new Thread(() -> {
+            new Thread(Safe.run("settings", () -> {
                 boolean done = writeText(target, BugReport.build(this));
                 runOnUiThread(() -> android.widget.Toast.makeText(this, I18n.get(done ? S.REPORT_SAVED : S.DL_FAILED),
                         android.widget.Toast.LENGTH_SHORT).show());
-            }, "tpx-report").start();
+            }), "tpx-report").start();
             return;
         }
         if (request != PICK_FONT) return;
         Uri uri = data.getData();
         String name = displayName(uri);
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             String error = FontSwap.importFont(this, uri);
             runOnUiThread(() -> {
                 if (error != null) {
@@ -1364,7 +1364,7 @@ public final class ModSettingsActivity extends Activity {
                 Prefs.set(Prefs.FONT, true);
                 if (fontChanged != null) fontChanged.run();
             });
-        }, "tpx-font-import").start();
+        }), "tpx-font-import").start();
     }
 
     private String displayName(Uri uri) {
@@ -1407,7 +1407,7 @@ public final class ModSettingsActivity extends Activity {
         panel.addView(grab, grabParams);
         panel.addView(content);
         layer.addView(panel, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
-        dim.setOnClickListener(view -> closeSheet());
+        dim.setOnClickListener(Safe.click("settings", view -> closeSheet()));
         root.addView(layer, new FrameLayout.LayoutParams(-1, -1));
         sheet = layer;
         if (!replacing && motion()) {
@@ -1482,7 +1482,7 @@ public final class ModSettingsActivity extends Activity {
         content.setOrientation(LinearLayout.VERTICAL);
         LinearLayout save = row(content);
         texts(save, I18n.get(S.BACKUP_SAVE_FILE), "TiktokPatchXposed-settings.json");
-        save.setOnClickListener(view -> {
+        save.setOnClickListener(Safe.click("settings", view -> {
             closeSheet();
             Intent create = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
                     .setType("application/json").putExtra(Intent.EXTRA_TITLE, "TiktokPatchXposed-settings.json");
@@ -1491,13 +1491,13 @@ public final class ModSettingsActivity extends Activity {
             } catch (RuntimeException unavailable) {
                 copySettings();
             }
-        });
+        }));
         LinearLayout copy = row(content);
         texts(copy, I18n.get(S.BACKUP_COPY), null);
-        copy.setOnClickListener(view -> {
+        copy.setOnClickListener(Safe.click("settings", view -> {
             closeSheet();
             copySettings();
-        });
+        }));
         return content;
     }
 
@@ -1520,7 +1520,7 @@ public final class ModSettingsActivity extends Activity {
 
     /** Writes or reads a backup file off the main thread, then reports on it. */
     private void backupFile(int request, Uri uri) {
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             boolean done;
             if (request == SAVE_BACKUP) {
                 done = writeText(uri, Prefs.export());
@@ -1533,7 +1533,7 @@ public final class ModSettingsActivity extends Activity {
                 android.widget.Toast.makeText(this, I18n.get(message), android.widget.Toast.LENGTH_SHORT).show();
                 if (done && request == OPEN_BACKUP) pop();
             });
-        }, "tpx-backup").start();
+        }), "tpx-backup").start();
     }
 
     private boolean writeText(Uri uri, String text) {
@@ -1725,23 +1725,23 @@ public final class ModSettingsActivity extends Activity {
         LinearLayout.LayoutParams wheelsParams = new LinearLayout.LayoutParams(-1, -2);
         wheelsParams.topMargin = dp(10);
         panel.addView(wheels, wheelsParams);
-        timeRow.setOnClickListener(view -> {
+        timeRow.setOnClickListener(Safe.click("settings", view -> {
             if (motion()) android.transition.TransitionManager.beginDelayedTransition(page.content);
             panel.setVisibility(panel.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-        });
+        }));
 
         TextView what = navigation(settings, I18n.get(S.STREAK_SEND), stickerLabel(), view -> openSheet(stickerSheet()));
         TextView whom = navigation(settings, I18n.get(S.STREAK_RECIPIENTS), recipientsLabel(), view -> openSheet(recipientsSheet()));
         page.footer(I18n.get(S.STREAK_TIME_NOTE));
 
         // "Selected: N" needs the streak chats; read them once, quietly, while the page opens.
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             List<AutoStreakManager.Partner> partners = AutoStreakManager.partners();
             if (partners != null) runOnUiThread(() -> {
                 lastPartners = partners;
                 whom.setText(recipientsLabel());
             });
-        }, "tpx-streak-count").start();
+        }), "tpx-streak-count").start();
         String[] shownSticker = {null};
         return () -> {
             int minute = StreakTiming.minuteOfDay(Prefs.number(Prefs.STREAK_TIME));
@@ -1822,12 +1822,12 @@ public final class ModSettingsActivity extends Activity {
             item.setEllipsize(TextUtils.TruncateAt.END);
             item.setPadding(dp(8), dp(8), dp(8), dp(8));
             int chosen = index;
-            item.setOnClickListener(view -> {
+            item.setOnClickListener(Safe.click("settings", view -> {
                 if (!view.isEnabled() || current.getAsInt() == chosen) return;
                 view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
                 pick.accept(chosen);
                 render.run();
-            });
+            }));
             bar.addView(item, new LinearLayout.LayoutParams(0, -2, 1));
             items.add(item);
         }
@@ -1918,7 +1918,7 @@ public final class ModSettingsActivity extends Activity {
         status.setPadding(dp(24), dp(16), dp(24), dp(16));
         list.addView(status);
         dim.run();
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             List<AutoStreakManager.Partner> partners = AutoStreakManager.partners();
             java.util.Map<String, StreakPeople.Person> people = partners == null ? null : StreakPeople.lookup(partners);
             runOnUiThread(() -> {
@@ -1935,7 +1935,7 @@ public final class ModSettingsActivity extends Activity {
                 }
                 dim.run();
             });
-        }, "tpx-streak-partners").start();
+        }), "tpx-streak-partners").start();
         TextView save = new TextView(this);
         save.setText(I18n.get(S.STREAK_SAVE));
         save.setTextColor(palette.background);
@@ -1944,11 +1944,11 @@ public final class ModSettingsActivity extends Activity {
         save.setGravity(Gravity.CENTER);
         save.setPadding(0, dp(13), 0, dp(13));
         save.setBackground(rounded(palette.textPrimary, dp(14)));
-        save.setOnClickListener(view -> {
+        save.setOnClickListener(Safe.click("settings", view -> {
             Prefs.setText(Prefs.STREAK_EXCLUDED, String.join(",", excluded));
             Prefs.set(Prefs.STREAK_ONLY_SELECTED, some[0]);
             closeSheet();
-        });
+        }));
         LinearLayout.LayoutParams saveParams = new LinearLayout.LayoutParams(-1, -2);
         saveParams.setMargins(dp(16), dp(12), dp(16), 0);
         content.addView(save, saveParams);
@@ -1985,12 +1985,12 @@ public final class ModSettingsActivity extends Activity {
         Runnable draw = () -> box.setImageDrawable(checkBox(!excluded.contains(partner.conversation)));
         draw.run();
         row.addView(box, new LinearLayout.LayoutParams(dp(22), dp(22)));
-        row.setOnClickListener(view -> {
+        row.setOnClickListener(Safe.click("settings", view -> {
             if (!view.isEnabled()) return;
             view.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK);
             if (!excluded.remove(partner.conversation)) excluded.add(partner.conversation);
             draw.run();
-        });
+        }));
     }
 
     private android.graphics.drawable.Drawable checkBox(boolean on) {
@@ -2027,7 +2027,7 @@ public final class ModSettingsActivity extends Activity {
         status.setGravity(Gravity.CENTER);
         status.setPadding(dp(16), dp(12), dp(16), dp(12));
         body.addView(status);
-        new Thread(() -> {
+        new Thread(Safe.run("settings", () -> {
             List<StreakSticker.Choice> stickers = StreakSticker.favourites();
             runOnUiThread(() -> {
                 if (isFinishing()) return;
@@ -2039,7 +2039,7 @@ public final class ModSettingsActivity extends Activity {
                 shown.addAll(stickers);
                 stickerGrid(body, shown);
             });
-        }, "tpx-favourite-stickers").start();
+        }), "tpx-favourite-stickers").start();
         return content;
     }
 
@@ -2081,12 +2081,12 @@ public final class ModSettingsActivity extends Activity {
                 cell.addView(mark, markParams);
             }
             cell.setContentDescription(sticker.title);
-            cell.setOnClickListener(view -> view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(90).withEndAction(() -> {
+            cell.setOnClickListener(Safe.click("settings", view -> view.animate().scaleX(0.9f).scaleY(0.9f).setDuration(90).withEndAction(() -> {
                 Prefs.setText(Prefs.STREAK_STICKER, sticker.id);
                 Prefs.setText(Prefs.STREAK_STICKER_TITLE, sticker.id.isEmpty() ? "" : sticker.title);
                 Prefs.setText(Prefs.STREAK_STICKER_URL, sticker.id.isEmpty() || sticker.previews.isEmpty() ? "" : sticker.previews.get(0));
                 closeSheet();
-            }).start());
+            }).start()));
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(76), 1);
             params.setMargins(dp(4), dp(4), dp(4), dp(4));
             line.addView(cell, params);
@@ -2107,7 +2107,7 @@ public final class ModSettingsActivity extends Activity {
      */
     private void loadPicture(ImageView view, String id, java.util.List<String> urls) {
         java.io.File file = new java.io.File(new java.io.File(getCacheDir(), "tpx_stickers"), id.replaceAll("[^0-9A-Za-z_-]", "_"));
-        PICTURES.execute(() -> {
+        PICTURES.execute(Safe.run("settings", () -> {
             byte[] bytes = PICTURE_CACHE.get(id);
             if (bytes == null && file.isFile()) {
                 try {
@@ -2147,7 +2147,7 @@ public final class ModSettingsActivity extends Activity {
                 PICTURE_CACHE.remove(id);
                 file.delete();
             }
-        });
+        }));
     }
 
     private byte[] fetch(java.util.List<String> urls) {
@@ -2259,7 +2259,7 @@ public final class ModSettingsActivity extends Activity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, -2);
         params.setMarginStart(dp(12));
         row.addView(field, params);
-        row.setOnClickListener(view -> field.requestFocus());
+        row.setOnClickListener(Safe.click("settings", view -> field.requestFocus()));
     }
 
     private void buildRegion(Page page, LinearLayout card) {
@@ -2405,7 +2405,7 @@ public final class ModSettingsActivity extends Activity {
         check.setImageDrawable(new Glyph(Glyph.Kind.CHECK, palette.accent, dp(22)));
         check.setVisibility(custom ? View.VISIBLE : View.INVISIBLE);
         row.addView(check, new LinearLayout.LayoutParams(dp(22), dp(22)));
-        row.setOnClickListener(view -> field.requestFocus());
+        row.setOnClickListener(Safe.click("settings", view -> field.requestFocus()));
         field.setOnEditorActionListener((view, action, event) -> {
             int days;
             try {
@@ -2455,7 +2455,7 @@ public final class ModSettingsActivity extends Activity {
             info.setPadding(dp(10), dp(10), dp(10), dp(10));
             info.setBackground(new RippleDrawable(ColorStateList.valueOf(palette.pressed), null, null));
             info.setContentDescription(I18n.get(description));
-            info.setOnClickListener(view -> openSheet(infoSheet(I18n.get(title), I18n.get(description))));
+            info.setOnClickListener(Safe.click("settings", view -> openSheet(infoSheet(I18n.get(title), I18n.get(description)))));
             row.addView(info, new LinearLayout.LayoutParams(dp(40), dp(40)));
         }
         Toggle toggle = new Toggle(this, palette);
@@ -2480,7 +2480,7 @@ public final class ModSettingsActivity extends Activity {
             }
             return false;
         });
-        row.setOnClickListener(view -> {
+        row.setOnClickListener(Safe.click("settings", view -> {
             boolean value = !toggle.checked();
             toggle.setChecked(value, true);
             // The tick lands on the same frame the thumb starts to move.
@@ -2492,7 +2492,7 @@ public final class ModSettingsActivity extends Activity {
             }
             Prefs.set(key, value);
             row.sendAccessibilityEvent(android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED);
-        });
+        }));
         row.setAccessibilityDelegate(new View.AccessibilityDelegate() {
             @Override
             public void onInitializeAccessibilityNodeInfo(View host, android.view.accessibility.AccessibilityNodeInfo info) {
@@ -2525,7 +2525,7 @@ public final class ModSettingsActivity extends Activity {
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(20), dp(20));
             params.setMarginStart(dp(4));
             row.addView(chevron, params);
-            row.setOnClickListener(click);
+            row.setOnClickListener(Safe.click("settings", click));
         } else {
             row.setClickable(false);
             row.setBackground(null);
@@ -2551,11 +2551,11 @@ public final class ModSettingsActivity extends Activity {
         check.setVisibility(selected ? View.VISIBLE : View.INVISIBLE);
         row.addView(check, new LinearLayout.LayoutParams(dp(22), dp(22)));
         row.setSelected(selected);
-        row.setOnClickListener(view -> {
+        row.setOnClickListener(Safe.click("settings", view -> {
             select.run();
             hideKeyboard(view);
             pop();
-        });
+        }));
         return row;
     }
 
@@ -2672,7 +2672,7 @@ public final class ModSettingsActivity extends Activity {
         button.setMinHeight(dp(40));
         button.setBackground(new RippleDrawable(ColorStateList.valueOf(palette.dark ? 0x22000000 : 0x33FFFFFF), null,
                 rounded(0xFFFFFFFF, dp(10))));
-        button.setOnClickListener(view -> AppRestart.restart(this));
+        button.setOnClickListener(Safe.click("settings", view -> AppRestart.restart(this)));
         LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(-2, dp(40));
         buttonParams.setMarginStart(dp(12));
         inner.addView(button, buttonParams);
@@ -2760,10 +2760,10 @@ public final class ModSettingsActivity extends Activity {
             back.setScaleType(ImageView.ScaleType.CENTER);
             back.setContentDescription(I18n.get(S.BACK));
             back.setBackground(new RippleDrawable(ColorStateList.valueOf(palette.pressed), null, null));
-            back.setOnClickListener(view -> {
+            back.setOnClickListener(Safe.click("settings", view -> {
                 if (pages.size() > 1) pop();
                 else finish();
-            });
+            }));
             FrameLayout.LayoutParams backParams = new FrameLayout.LayoutParams(dp(48), dp(48), Gravity.START | Gravity.BOTTOM);
             backParams.setMarginStart(dp(4));
             backParams.bottomMargin = dp(4);

@@ -108,11 +108,11 @@ final class DownloadSheet {
         for (int index = 0; index < rows.size(); index++) {
             int chosen = index;
             View row = row(rows.get(index));
-            row.setOnClickListener(view -> {
+            row.setOnClickListener(Safe.click("download sheet", view -> {
                 if (closing) return;
                 pick.picked(chosen);
                 close();
-            });
+            }));
             list.addView(row);
         }
         int maxHeight = (int) (activity.getResources().getDisplayMetrics().heightPixels * 0.55f);
@@ -132,7 +132,7 @@ final class DownloadSheet {
         pill.setColor(palette.field);
         pill.setCornerRadius(dp(12));
         cancel.setBackground(new RippleDrawable(ColorStateList.valueOf(palette.pressed), pill, null));
-        cancel.setOnClickListener(view -> close());
+        cancel.setOnClickListener(Safe.click("download sheet", view -> close()));
         LinearLayout.LayoutParams cancelParams = new LinearLayout.LayoutParams(-1, dp(42));
         cancelParams.setMargins(dp(16), dp(4), dp(16), 0);
         sheet.addView(cancel, cancelParams);
@@ -156,7 +156,7 @@ final class DownloadSheet {
         }
         sheet.setAlpha(0f);
         dialog.show();
-        sheet.post(() -> {
+        sheet.post(Safe.run("download sheet", () -> {
             sheet.setTranslationY(sheet.getHeight());
             sheet.setAlpha(1f);
             sheet.animate().translationY(0).setDuration(320)
@@ -168,7 +168,7 @@ final class DownloadSheet {
                 child.animate().alpha(1f).translationY(0).setStartDelay(90 + 45L * index).setDuration(260)
                         .setInterpolator(new DecelerateInterpolator(1.6f)).start();
             }
-        });
+        }));
     }
 
     private View row(Row item) {

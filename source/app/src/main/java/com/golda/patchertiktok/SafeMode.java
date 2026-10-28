@@ -49,7 +49,7 @@ final class SafeMode {
 
     /** Called once the app has started: a launch that survives a while is not a short one. */
     static void started() {
-        new Handler(Looper.getMainLooper()).postDelayed(() -> save(0, System.currentTimeMillis()), STABLE_MS);
+        new Handler(Looper.getMainLooper()).postDelayed(Safe.run("safe mode", () -> save(0, System.currentTimeMillis())), STABLE_MS);
     }
 
     private static void save(int count, long time) {

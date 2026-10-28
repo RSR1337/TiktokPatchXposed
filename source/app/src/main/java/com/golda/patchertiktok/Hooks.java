@@ -31,7 +31,10 @@ final class Hooks {
         protected void after(Call call) throws Throwable { }
     }
 
-    /** Replaces the method body; whatever {@link #replace} returns or throws is the result. */
+    /**
+     * Replaces the method body with what {@link #replace} returns. If it fails, TikTok's own method
+     * runs instead: a failure of ours never reaches TikTok as an exception.
+     */
     abstract static class Replace extends Hook {
         protected abstract Object replace(Call call) throws Throwable;
 
@@ -39,7 +42,7 @@ final class Hooks {
             try {
                 call.setResult(replace(call));
             } catch (Throwable error) {
-                call.setThrowable(error);
+                log("replace failed: " + error);
             }
         }
     }

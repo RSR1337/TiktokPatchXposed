@@ -32,7 +32,7 @@ final class SeenVideos {
     private static final long MIN_MS = 1_000L;
     private static final long MAX_MS = 5_000L;
     private static final ExecutorService IO = Executors.newSingleThreadExecutor(task -> {
-        Thread thread = new Thread(task, "tpx-seen");
+        Thread thread = new Thread(Safe.run("seen videos", task), "tpx-seen");
         thread.setDaemon(true);
         return thread;
     });
@@ -68,14 +68,14 @@ final class SeenVideos {
                 hooks++;
             }
         }
-        if (Prefs.on(Prefs.HIDE_SEEN)) IO.execute(SeenVideos::load);
+        if (Prefs.on(Prefs.HIDE_SEEN)) IO.execute(Safe.run("seen videos", SeenVideos::load));
         RuntimeLog.log(hooks == 0 ? "seen videos unavailable: player progress not found" : "seen videos: hooks=" + hooks);
     }
 
     /** Whether the feed should leave this video out. */
     static boolean seen(Object aweme) {
         if (!loaded) {
-            if (folder != null) IO.execute(SeenVideos::load);
+            if (folder != null) IO.execute(Safe.run("seen videos", SeenVideos::load));
             return false;
         }
         long id = id(Reflect.call(aweme, "getAid"));
@@ -94,13 +94,13 @@ final class SeenVideos {
         }
         if (marked || !watched(position, duration)) return;
         marked = true;
-        IO.execute(() -> {
+        IO.execute(Safe.run("seen videos", () -> {
             load();
             synchronized (SEEN) {
                 if (!SEEN.add(id)) return;
             }
             append(id);
-        });
+        }));
     }
 
     /** A tenth of the video, held between one and five seconds; two seconds when its length is unknown. */
@@ -169,7 +169,7 @@ final class SeenVideos {
 
     /** Forgets every watched video of the signed-in account. */
     static void clear() {
-        IO.execute(() -> {
+        IO.execute(Safe.run("seen videos", () -> {
             load();
             synchronized (SEEN) {
                 SEEN.clear();
@@ -177,7 +177,7 @@ final class SeenVideos {
             File file = file(account);
             if (file != null) file.delete();
             appended = 0;
-        });
+        }));
     }
 
     static int size() {

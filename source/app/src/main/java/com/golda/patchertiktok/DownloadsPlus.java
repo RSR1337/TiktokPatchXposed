@@ -36,7 +36,7 @@ public final class DownloadsPlus {
     private static final Set<String> ACTIVE = Collections.synchronizedSet(new HashSet<>());
     private static final ThreadPoolExecutor WORKER = new ThreadPoolExecutor(1, 1, 30, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(4), task -> {
-                Thread thread = new Thread(task, "tiktok-downloads-plus");
+                Thread thread = new Thread(Safe.run("downloads", task), "tiktok-downloads-plus");
                 thread.setDaemon(true);
                 return thread;
             }, new ThreadPoolExecutor.AbortPolicy());
@@ -281,7 +281,7 @@ public final class DownloadsPlus {
         List<DownloadModels.Item> items = new ArrayList<>(choices);
         String batch = Long.toString(System.currentTimeMillis()) + '_' + UUID.randomUUID().toString().substring(0, 8);
         try {
-            WORKER.execute(() -> {
+            WORKER.execute(Safe.run("downloads", () -> {
                 int saved = 0;
                 try {
                     for (int i = 0; i < items.size(); i++) if (MediaDownload.save(app, items.get(i), id, batch, i + 1)) saved++;
@@ -298,7 +298,7 @@ public final class DownloadsPlus {
                     }
                     toast(app, message);
                 }
-            });
+            }));
             toast(app, I18n.get(I18n.S.DL_STARTED));
             return true;
         } catch (RuntimeException ignored) {
@@ -309,9 +309,9 @@ public final class DownloadsPlus {
 
     private static void toast(Context app, String message) {
         try {
-            new Handler(Looper.getMainLooper()).post(() -> {
+            new Handler(Looper.getMainLooper()).post(Safe.run("downloads", () -> {
                 try { Toast.makeText(app, message, Toast.LENGTH_SHORT).show(); } catch (RuntimeException ignored) { }
-            });
+            }));
         } catch (RuntimeException ignored) { }
     }
 

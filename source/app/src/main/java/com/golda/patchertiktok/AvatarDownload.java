@@ -35,7 +35,7 @@ final class AvatarDownload {
                 if (!Prefs.on(Prefs.AVATAR_DOWNLOAD)) return;
                 Activity activity = (Activity) param.thisObject;
                 // The photo view is bound once the screen is laid out.
-                activity.getWindow().getDecorView().post(() -> attach(activity, user, avatarView));
+                activity.getWindow().getDecorView().post(Safe.run("avatar download", () -> attach(activity, user, avatarView)));
             }
         });
     }

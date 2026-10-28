@@ -92,6 +92,14 @@ final class ResumePosition {
     /** Notes where the current video is, as long as it is still the one playing. */
     private static final Runnable SAMPLE = new Runnable() {
         @Override public void run() {
+            try {
+                step();
+            } catch (Throwable error) {
+                Safe.log("resume position", error);
+            }
+        }
+
+        private void step() {
             Object feedPanel = panel.get();
             String id = playing;
             if (feedPanel == null || id == null || !Prefs.on(Prefs.RESUME_POSITION)) return;

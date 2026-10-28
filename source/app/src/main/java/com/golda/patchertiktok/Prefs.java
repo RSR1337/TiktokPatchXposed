@@ -449,7 +449,8 @@ final class Prefs {
 
     static void unlisten(Runnable listener) { LISTENERS.remove(listener); }
 
+    /** Each listener on its own: one that fails neither stops the others nor closes TikTok. */
     private static void notifyChanged() {
-        for (Runnable listener : LISTENERS) listener.run();
+        for (Runnable listener : LISTENERS) Safe.run("settings listener", listener).run();
     }
 }

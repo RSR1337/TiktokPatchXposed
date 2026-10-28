@@ -288,7 +288,7 @@ final class SettingsEntry {
                 // TikTok's splash activity finishes immediately, so open from the next real screen.
                 if (openPending && !activity.isFinishing() && !(activity instanceof ModSettingsActivity)) {
                     openPending = false;
-                    activity.getWindow().getDecorView().postDelayed(() -> open(activity), 250);
+                    activity.getWindow().getDecorView().postDelayed(Safe.run("settings row", () -> open(activity)), 250);
                 }
             }
 

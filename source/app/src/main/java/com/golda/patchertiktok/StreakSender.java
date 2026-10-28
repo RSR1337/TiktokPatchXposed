@@ -97,7 +97,7 @@ final class StreakSender {
         // Same message extras as a flame tapped in a chat; no made-up analytics.
         args[3] = ext();
         args[9] = Proxy.newProxyInstance(callbackType.getClassLoader(), new Class<?>[]{callbackType}, callback);
-        boolean posted = MAIN.post(() -> {
+        boolean posted = MAIN.post(Safe.run("streak send", () -> {
             try {
                 if (!allowed.getAsBoolean()) {
                     callback.beforeDispatchFailure();
@@ -111,7 +111,7 @@ final class StreakSender {
                 callback.done.countDown();
                 RuntimeLog.log("send result unknown: " + unknown.getClass().getSimpleName());
             }
-        });
+        }));
         if (!posted) callback.beforeDispatchFailure();
         try {
             callback.done.await(45, TimeUnit.SECONDS);
@@ -220,13 +220,13 @@ final class StreakSender {
             if (serverId && Boolean.TRUE.equals(StreakApi.method(messageType, "isSuccessStatus").invoke(message))) {
                 confirmed = true;
                 done.countDown();
-                if (finished) LATE.execute(() -> {
+                if (finished) LATE.execute(Safe.run("streak send", () -> {
                     try {
                         ledger.finish(key, attempt, DeliveryLedger.State.CONFIRMED, System.currentTimeMillis());
                     } catch (RuntimeException error) {
                         RuntimeLog.log("late confirmation storage failed");
                     }
-                });
+                }));
             }
         }
 

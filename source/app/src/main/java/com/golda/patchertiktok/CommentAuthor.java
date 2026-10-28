@@ -81,10 +81,10 @@ final class CommentAuthor {
         String at = handle instanceof String && !((String) handle).isEmpty() && !handle.equals(nickname) ? "@" + handle : null;
         ViewGroup view = (ViewGroup) row;
         // TikTok can style the name a moment after the bind; mark it then.
-        view.post(() -> {
+        view.post(Safe.run("comment author", () -> {
             TextView name = nameLabel(view, (String) nickname);
             if (name != null) mark(name, at, flag);
-        });
+        }));
     }
 
     private static Object comment(Object cell) {

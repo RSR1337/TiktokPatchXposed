@@ -77,7 +77,7 @@ final class ReadReceipts {
                 if (!unsent(id)) return;
                 Long auto = AUTOMATIC.get(id);
                 if (auto != null && System.currentTimeMillis() - auto < 120_000L) return;
-                MAIN.post(() -> markRead(id));
+                MAIN.post(Safe.run("mark as read", () -> markRead(id)));
             }
         });
     }
