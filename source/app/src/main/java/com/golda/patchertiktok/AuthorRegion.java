@@ -38,6 +38,8 @@ final class AuthorRegion {
     private AuthorRegion() { }
 
     static void install(ClassLoader loader) {
+        // Profiles first: they also carry the account date, which does not need the feed panel.
+        installProfile(loader);
         Class<?> panel = Hooks.findClass(PANEL, loader);
         if (panel == null || (currentAweme = RenderedAdSkip.currentAweme(panel)) == null) {
             RuntimeLog.log("author region unavailable: feed panel not found");
@@ -60,7 +62,10 @@ final class AuthorRegion {
             });
             hooks++;
         }
-        installProfile(loader);
+    }
+
+    private static boolean profileWanted() {
+        return Prefs.on(Prefs.AUTHOR_REGION) || Prefs.on(Prefs.ACCOUNT_DATE);
     }
 
     private static int id(View view) {
@@ -144,7 +149,7 @@ final class AuthorRegion {
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     Object value = param.args[position];
-                    if (value == null || !Prefs.on(Prefs.AUTHOR_REGION)) return;
+                    if (value == null || !profileWanted()) return;
                     profileUser = new java.lang.ref.WeakReference<>(value);
                     // The header can bind before or after the user arrives; look again shortly.
                     MAIN.post(AuthorRegion::markProfile);
@@ -158,7 +163,7 @@ final class AuthorRegion {
             if (method.getReturnType() != void.class || Modifier.isStatic(method.getModifiers())) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
-                    if (!Prefs.on(Prefs.AUTHOR_REGION)) return;
+                    if (!profileWanted()) return;
                     try {
                         Object view = nameView.invoke(param.thisObject);
                         if (view instanceof TextView) accountName = new java.lang.ref.WeakReference<>((TextView) view);
@@ -181,14 +186,16 @@ final class AuthorRegion {
         Object nickname = Reflect.call(user, "getNickname");
         String region = userRegion(user);
         remember(handle, region);
-        String flag = RegionFlag.of(region);
         CharSequence text = name.getText();
-        if (flag == null || text == null || text.length() == 0) return;
+        if (text == null || text.length() == 0) return;
         String shown = text.toString();
         String owner = null;
         if (handle instanceof String && !((String) handle).isEmpty() && shown.contains((String) handle)) owner = (String) handle;
         else if (nickname instanceof String && !((String) nickname).isEmpty() && shown.contains((String) nickname)) owner = (String) nickname;
-        if (owner != null) pin(name, flag, owner);
+        if (owner == null) return;
+        AccountDate.show(name, user);
+        String flag = Prefs.on(Prefs.AUTHOR_REGION) ? RegionFlag.of(region) : null;
+        if (flag != null) pin(name, flag, owner);
     }
 
     private static String userRegion(Object user) {

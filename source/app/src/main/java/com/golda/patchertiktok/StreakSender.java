@@ -77,6 +77,7 @@ final class StreakSender {
         String key = StreakKeys.hash("conversation_v2_", account, candidate.conversation);
         DeliveryLedger.Record reservation = ledger.reserve(key, day, window, System.currentTimeMillis());
         if (reservation == null) return "PREVIOUS_ATTEMPT";
+        ReadReceipts.automatic(candidate.conversation);
 
         // A chosen favourite sticker goes instead of the flame; if it cannot go, the flame does.
         String sticker = StreakSticker.chosen();

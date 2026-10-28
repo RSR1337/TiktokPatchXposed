@@ -89,6 +89,12 @@ final class Hooks {
     private static final Map<Object, Map<String, Object>> EXTRAS = Collections.synchronizedMap(new WeakHashMap<>());
     private static volatile Backend backend;
 
+    /** Which entry point runs the module (modern libxposed API or the legacy bridge), for bug reports. */
+    static String backendName() {
+        Backend active = backend;
+        return active == null ? "none" : active.getClass().getName();
+    }
+
     private Hooks() { }
 
     /** First entry point wins; the other one stays idle if a framework loads both. */
@@ -115,6 +121,20 @@ final class Hooks {
             count++;
         }
         return count;
+    }
+
+    /**
+     * One hook of many: when the framework refuses this method, it is skipped and logged, and the
+     * feature keeps its other hooks.
+     */
+    static boolean tryHook(Member target, Hook hook) {
+        try {
+            hook(target, hook);
+            return true;
+        } catch (Throwable error) {
+            log("skipped hook " + target.getDeclaringClass().getName() + "#" + target.getName() + ": " + error);
+            return false;
+        }
     }
 
     static int hookConstructors(Class<?> type, Hook hook) {

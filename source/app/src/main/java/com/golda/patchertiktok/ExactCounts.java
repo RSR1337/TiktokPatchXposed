@@ -51,7 +51,7 @@ final class ExactCounts {
             }
         }
         for (Method method : shorteners) {
-            Hooks.hook(method, new Hooks.Hook() {
+            Hooks.tryHook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     if (!Prefs.on(Prefs.EXACT_COUNTS) || !(param.args[0] instanceof Long)) return;
                     long value = (Long) param.args[0];
@@ -81,7 +81,7 @@ final class ExactCounts {
             }
         }
         for (Method helper : helpers) {
-            Hooks.hook(helper, new Hooks.Hook() {
+            Hooks.tryHook(helper, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     // Null or negative: TikTok's own fallback text stays.
                     if (!Prefs.on(Prefs.EXACT_COUNTS) || !(param.args[1] instanceof Number)) return;

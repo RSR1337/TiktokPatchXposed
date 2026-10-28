@@ -22,14 +22,16 @@ final class Module {
     static void load(String packageName, String processName, ClassLoader loader) {
         if (!targets(packageName) || !LOADED.compareAndSet(false, true)) return;
         boolean main = packageName.equals(processName);
+        if (main) SafeMode.enter(packageName);
 
-        if (main) {
+        if (main && !SafeMode.active()) {
             // These hooks read their toggle on every call, so they are safe before settings load.
             run("feed filter", () -> FeedFilter.install(loader));
             run("search ads", () -> ContentFilter.installSearch(loader));
             run("remember clear display", () -> CleanScreen.install(loader));
             run("resume position", () -> ResumePosition.install(loader));
             run("auto-scroll", () -> AutoScroll.install(loader));
+            run("double tap like", () -> DoubleTapLike.install(loader));
             run("comment copy", () -> CommentCopy.install(loader));
             run("comment media", () -> CommentMedia.install(loader));
             run("external browser", () -> ExternalLinks.install(loader));
@@ -57,7 +59,7 @@ final class Module {
                 if (!main || !(param.args[0] instanceof Context)) return;
                 Context base = (Context) param.args[0];
                 Prefs.load(base);
-                if (Prefs.on(Prefs.FONT)) {
+                if (Prefs.on(Prefs.FONT) && !SafeMode.active()) {
                     run("code index", () -> Discovery.init(base));
                     run("font", () -> FontSwap.install(base, loader));
                 }
@@ -73,6 +75,11 @@ final class Module {
     private static void startup(Application app, ClassLoader loader, boolean main) {
         Prefs.load(app);
         if (main) RuntimeLog.attach(app);
+        if (main) run("crash log", () -> CrashLog.install(app));
+        if (main && SafeMode.active()) {
+            safeStartup(app, loader);
+            return;
+        }
         if (main) Overlay.settingsLoaded();
         if (main) run("accent color", () -> {
             AccentColor.install();
@@ -89,9 +96,11 @@ final class Module {
         run("language", () -> I18n.use(app.getResources().getConfiguration().getLocales().get(0)));
         run("code index", () -> Discovery.init(app));
         run("friend card", () -> FeedFilter.installCardInsertion(loader));
+        run("seen videos", () -> SeenVideos.install(app, loader));
         run("unmute", () -> Unmute.install(loader));
         run("hd upload", () -> HdUpload.install(loader));
         run("read receipts", () -> ReadReceipts.install(loader));
+        run("unsent messages", () -> UnsentMessages.install(loader));
         run("read all", () -> InboxReadAll.install(loader));
         run("comment author", () -> CommentAuthor.install(loader));
         run("native auto-scroll", () -> AutoScroll.installNative(loader));
@@ -132,6 +141,22 @@ final class Module {
         run("auto streaks", () -> AutoStreakManager.install(app, loader));
         Discovery.release();
         RuntimeLog.log(BuildConfig.VERSION_NAME + " started in " + app.getPackageName());
+        SafeMode.started();
+    }
+
+    /**
+     * After TikTok closed right after starting three times, only the settings row (with the bug
+     * report) is installed, and the user is told why everything else is off this time.
+     */
+    private static void safeStartup(Application app, ClassLoader loader) {
+        RuntimeLog.log("safe mode: TikTok closed right after starting several times, features are off for this launch");
+        run("language", () -> I18n.use(app.getResources().getConfiguration().getLocales().get(0)));
+        run("code index", () -> Discovery.init(app));
+        run("settings row", () -> SettingsEntry.install(app, loader));
+        Discovery.release();
+        SafeMode.started();
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() ->
+                android.widget.Toast.makeText(app, I18n.get(I18n.S.SAFE_MODE_SHORT), android.widget.Toast.LENGTH_LONG).show(), 3_000L);
     }
 
     private static void run(String name, Runnable task) {
@@ -139,7 +164,7 @@ final class Module {
         try {
             task.run();
         } catch (Throwable error) {
-            FeatureStatus.failed(name, error.getClass().getSimpleName());
+            FeatureStatus.failed(name, FeatureStatus.describe(error));
             RuntimeLog.log(name + " unavailable: " + error);
         } finally {
             FeatureStatus.end();

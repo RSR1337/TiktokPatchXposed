@@ -62,7 +62,7 @@ final class ExactTime {
             }
         }
         for (Method helper : helpers) {
-            Hooks.hook(helper, new Hooks.Hook() {
+            Hooks.tryHook(helper, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     if (SCOPE.get()[0] == 0 || !Prefs.on(Prefs.EXACT_TIME) || !(param.args[0] instanceof Long)) return;
                     long millis = (Long) param.args[0];
@@ -93,11 +93,10 @@ final class ExactTime {
     }
 
     private static int scope(Method method) {
-        Hooks.hook(method, new Hooks.Hook() {
+        return Hooks.tryHook(method, new Hooks.Hook() {
             @Override protected void before(Hooks.Call param) { SCOPE.get()[0]++; }
             @Override protected void after(Hooks.Call param) { SCOPE.get()[0]--; }
-        });
-        return 1;
+        }) ? 1 : 0;
     }
 
     /** Feed and story header: the state builder and its "· " + date helper. */
@@ -119,7 +118,7 @@ final class ExactTime {
         for (Method method : vm.getDeclaredMethods()) {
             Class<?>[] p = method.getParameterTypes();
             if (!method.getName().equals("paramSync2StateAccept") || p.length != 2 || p[1] != item) continue;
-            Hooks.hook(method, new Hooks.Hook() {
+            Hooks.tryHook(method, new Hooks.Hook() {
                 @Override protected void before(Hooks.Call param) {
                     Object seconds = Reflect.call(Reflect.call(param.args[1], "getAweme"), "getCreateTime");
                     POST.get()[0] = seconds instanceof Long ? (Long) seconds : 0;
@@ -129,7 +128,7 @@ final class ExactTime {
             hooks++;
         }
         if (hooks == 0) return 0;
-        Hooks.hook(prefix, new Hooks.Hook() {
+        Hooks.tryHook(prefix, new Hooks.Hook() {
             @Override protected void after(Hooks.Call param) {
                 long seconds = POST.get()[0];
                 Object shown = param.getResult();

@@ -74,8 +74,18 @@ final class MessageTime {
         if (!(container instanceof ViewGroup)) return;
         ViewGroup row = (ViewGroup) container;
         Label label = (Label) Hooks.getExtra(row, LABEL);
-        Object created = Prefs.on(Prefs.MESSAGE_TIME) ? Reflect.call(message(item), "getCreatedAt") : null;
-        if (!(created instanceof Long) || (Long) created <= 0) {
+        boolean time = Prefs.on(Prefs.MESSAGE_TIME);
+        Object message = time || Prefs.on(Prefs.KEEP_UNSENT) ? message(item) : null;
+        Object created = time ? Reflect.call(message, "getCreatedAt") : null;
+        Context context = row.getContext();
+        String text = created instanceof Long && (Long) created > 0
+                ? format(DateFormat.is24HourFormat(context)).format(new Date((Long) created)) : null;
+        // A message the other person unsent but that is kept says so next to its time.
+        if (UnsentMessages.marked(message)) {
+            String unsent = I18n.get(I18n.S.UNSENT_MARK);
+            text = text == null ? unsent : text + " · " + unsent;
+        }
+        if (text == null) {
             // Off, or a row without a time (notices): nothing drawn, TikTok's padding stays.
             if (label != null) label.setText(null);
             return;
@@ -86,8 +96,7 @@ final class MessageTime {
             row.getOverlay().add(label);
             Hooks.setExtra(row, LABEL, label);
         }
-        Context context = row.getContext();
-        label.setText(format(DateFormat.is24HourFormat(context)).format(new Date((Long) created)));
+        label.setText(text);
         // TikTok sets this padding on every bind; if a bind leaves ours in place, it is not added twice.
         int bottom = row.getPaddingBottom();
         if (bottom == label.applied) bottom = label.base;

@@ -57,10 +57,17 @@ final class Prefs {
     static final String GHOST_ONLINE = "ghost_online";
     /** Chats: the read mark is not sent; "Mark as read" sends it on demand. */
     static final String GHOST_READ = "ghost_read";
+    /** With "Read" hidden, replying in a chat still sends "Read" for that chat. */
+    static final String READ_ON_REPLY = "ghost_read_on_reply";
     /** The sent time under each chat message. */
     static final String MESSAGE_TIME = "message_time";
     /** Hide recommended videos published longer ago than {@link #oldVideoDays()}. */
     static final String OLD_VIDEOS = "hide_old_videos";
+    /** Leave videos already watched out of For You when TikTok sends them again. */
+    static final String HIDE_SEEN = "hide_seen_videos";
+    static final String KEEP_UNSENT = "keep_unsent_messages";
+    static final String NO_DOUBLE_TAP_LIKE = "no_double_tap_like";
+    static final String ACCOUNT_DATE = "account_created_date";
     static final String OLD_VIDEO_DAYS = "old_video_days";
     static final int DEFAULT_OLD_VIDEO_DAYS = 90;
     /** Paid content, shop/product videos and search ads. */
@@ -190,8 +197,13 @@ final class Prefs {
         DEFAULTS.put(GHOST_TYPING, false);
         DEFAULTS.put(GHOST_ONLINE, false);
         DEFAULTS.put(GHOST_READ, false);
+        DEFAULTS.put(READ_ON_REPLY, false);
         DEFAULTS.put(MESSAGE_TIME, false);
         DEFAULTS.put(OLD_VIDEOS, false);
+        DEFAULTS.put(HIDE_SEEN, false);
+        DEFAULTS.put(KEEP_UNSENT, false);
+        DEFAULTS.put(NO_DOUBLE_TAP_LIKE, false);
+        DEFAULTS.put(ACCOUNT_DATE, false);
         DEFAULTS.put(PROMO, true);
         DEFAULTS.put(AI_CONTENT, false);
         DEFAULTS.put(CUSTOM_FILTER, false);
@@ -365,6 +377,29 @@ final class Prefs {
         SharedPreferences current = preferences;
         if (current != null) current.edit().putInt(OLD_VIDEO_DAYS, oldVideoDays).apply();
         notifyChanged();
+    }
+
+    /**
+     * Every setting back to its default; the random device id stays, so TikTok does not see a new
+     * device. Idea by RSR1337 (PR #14).
+     */
+    static synchronized void reset() {
+        SharedPreferences current = preferences;
+        if (current == null) return;
+        SharedPreferences.Editor editor = current.edit();
+        for (String key : DEFAULTS.keySet()) editor.remove(key);
+        for (String key : TEXT_KEYS) editor.remove(key);
+        for (String key : LONG_KEYS) editor.remove(key);
+        editor.remove(OLD_VIDEO_DAYS).remove(FONT_SOURCE).remove(FONT_FILE);
+        editor.commit();
+        read(current);
+        rebuildRules();
+        notifyChanged();
+    }
+
+    /** Every switch and whether it is on, for bug reports. */
+    static Map<String, Boolean> switches() {
+        return new java.util.TreeMap<>(FLAGS);
     }
 
     static String text(String key) {

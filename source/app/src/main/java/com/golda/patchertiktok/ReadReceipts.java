@@ -46,7 +46,45 @@ final class ReadReceipts {
         }
         int modern = installModern(loader, request);
         int legacy = installLegacy(loader, body);
-        RuntimeLog.log("read receipts: current=" + modern + " older=" + legacy + " read now=" + (force != null));
+        int replies = installReplies(loader);
+        RuntimeLog.log("read receipts: current=" + modern + " older=" + legacy + " read now=" + (force != null)
+                + " on reply=" + replies);
+    }
+
+    private static final String SEND_BODY = "com.bytedance.im.core.proto.SendMessageRequestBody";
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+    /** Chats an auto streak is going to, with when it started: those sends are not replies. */
+    private static final Map<String, Long> AUTOMATIC = new ConcurrentHashMap<>();
+
+    /**
+     * Replying shows you read the chat anyway: when a message to a chat whose "Read" was kept back is
+     * built (every message goes out as a SendMessageRequestBody), that chat's read mark is sent too.
+     */
+    private static int installReplies(ClassLoader loader) {
+        Class<?> type = Hooks.findClass(SEND_BODY, loader);
+        if (type == null) return 0;
+        Field conversation;
+        try {
+            conversation = type.getDeclaredField("conversation_id");
+            conversation.setAccessible(true);
+        } catch (NoSuchFieldException missing) {
+            return 0;
+        }
+        return Hooks.hookConstructors(type, new Hooks.Hook() {
+            @Override protected void after(Hooks.Call param) throws IllegalAccessException {
+                if (!Prefs.on(Prefs.GHOST_READ) || !Prefs.on(Prefs.READ_ON_REPLY)) return;
+                String id = string(conversation.get(param.thisObject));
+                if (!unsent(id)) return;
+                Long auto = AUTOMATIC.get(id);
+                if (auto != null && System.currentTimeMillis() - auto < 120_000L) return;
+                MAIN.post(() -> markRead(id));
+            }
+        });
+    }
+
+    /** An auto streak is about to go to this chat; it is not the user replying. */
+    static void automatic(String conversation) {
+        if (conversation != null) AUTOMATIC.put(conversation, System.currentTimeMillis());
     }
 
     /** MarkConversationReadUseCase: builds the request from the chat, then sends it in one method. */

@@ -7,7 +7,7 @@ turns on features TikTok rolls out only to some people, and adds many small thin
 everywhere, your own color, font and AMOLED theme, hiding parts of the screen, country flags,
 invisible mode and auto streaks. All settings live right inside TikTok.
 
-Current version: **4.4.0**. Tested on **TikTok 47.4.3** and **47.1.4** (Google Play and universal APK),
+Current version: **4.4.1**. Tested on **TikTok 47.4.3** and **47.1.4** (Google Play and universal APK),
 **Android 16**. Most features find what they need in TikTok by themselves, so
 they survive TikTok updates.
 
@@ -51,6 +51,7 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **Hide "People you may know"**: videos and whole cards with people from your contacts.
 - **Hide paid content and products**, **hide AI videos**.
 - **Only fresh videos**: hides recommendations older than the chosen period.
+- **Hide videos I've seen**: the module remembers what you watched and leaves it out when TikTok sends it again.
 - **Own filter**: by words, hashtags, authors, minimum likes and views.
 
 ### Playback
@@ -58,6 +59,7 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
   long-press menu. Off everywhere by default; photo posts by music length.
 - **Exact date and time**: on videos, stories, comments and reposts, with seconds if you like.
 - **Exact numbers**: likes, comments, shares, views and profile counts in full.
+- 🧪 **No like on double tap**: double-tapping a video no longer likes it.
 - 🧪 **Picture-in-picture**: TikTok's own floating video window.
 - **3× speed** in TikTok's own speed menu.
 - **Screen refresh rate**: hold 60, 90 or 120 Hz; TikTok no longer lowers it to the video's frame rate.
@@ -74,9 +76,10 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **AMOLED theme**: pure black, turns TikTok's dark theme on by itself.
 - **Hide elements**: side buttons, the music disc, author and caption, the Tako button.
 - **Interface opacity**, **OLED burn-in protection** and **keep brightness** (TikTok no longer turns it up in the camera and editor).
-- **New profile layout**, **hide stories in the Inbox**.
+- **New profile layout**, 🧪 **account creation date** under the name, **hide stories in the Inbox**.
 - **Time on messages**: under every chat message.
 - **"Read all"**: hold the Inbox tab.
+- 🧪 **Keep unsent messages**: a message the other person unsent stays, marked "Unsent".
 
 ### Comments
 - **TikTok's translate buttons**: an icon on every foreign comment and "Translate all" in the
@@ -96,7 +99,8 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 
 ### Privacy
 - 🧪 **Invisible mode**: not showing up in story (and highlight), profile and video views.
-- **In chats:** hide "typing…", 🧪 "online" and 🧪 "Read" (with "Mark as read" in a message's menu).
+- **In chats:** hide "typing…", 🧪 "online" and 🧪 "Read" (with "Mark as read" in a message's menu
+  and "Read" when you reply).
 - 🧪 **Block location**, 🧪 **hide VPN**, 🧪 **random device ID**, 🧪 **hide root**,
   🧪 **no motion tracking**, **no passkey prompts**.
 - **Analytics:** block third-party trackers (Google/Firebase, Facebook, AppsFlyer) and 🧪 don't send TikTok's analytics.
@@ -120,8 +124,10 @@ The module doesn't change the account's region or your IP address, so the result
 - 🧪 **No forced login**, 🧪 **no hashtag limit**, 🧪 **camera extras** (teleprompter, green screen).
 
 ### Settings screen
-Search across settings, "Feature status" (what was found in your TikTok version), export and import
-of settings as a `.json` file.
+Search across settings, how many features are on in each section, "Feature status" (what was found in your
+TikTok version, and why something was not). Under "More": export and import of settings as a `.json` file,
+reset all settings and a **bug report** (log, crashes, device; attach it to an issue). If TikTok closes right
+after starting three times in a row, the module runs one launch in **safe mode** so the report can be saved.
 </details>
 
 <details>
