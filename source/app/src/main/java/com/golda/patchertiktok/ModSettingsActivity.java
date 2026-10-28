@@ -501,6 +501,7 @@ public final class ModSettingsActivity extends Activity {
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.COMMENT_MEDIA, S.COMMENT_MEDIA_DESC, Prefs.COMMENT_MEDIA),
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.STORY_DOWNLOAD, S.STORY_DOWNLOAD_DESC, Prefs.STORY_DOWNLOAD),
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.AVATAR_DOWNLOAD, S.AVATAR_DOWNLOAD_DESC, Prefs.AVATAR_DOWNLOAD),
+            new Setting(Category.SHARING, S.GROUP_MEDIA, S.LIVE_RECORD, S.LIVE_RECORD_DESC, Prefs.LIVE_RECORD),
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.CHAT_STICKER, S.CHAT_STICKER_DESC, Prefs.CHAT_STICKER),
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.HD_UPLOAD, S.HD_UPLOAD_DESC, Prefs.HD_UPLOAD),
             new Setting(Category.SHARING, S.GROUP_MEDIA, S.UPLOAD_ORIGINAL, S.UPLOAD_ORIGINAL_DESC, Prefs.UPLOAD_ORIGINAL),
@@ -740,7 +741,7 @@ public final class ModSettingsActivity extends Activity {
             {"refresh rate", "REFRESH_RATE"}, {"story download", "STORY_DOWNLOAD"}, {"avatar download", "AVATAR_DOWNLOAD"},
             {"message time", "MESSAGE_TIME"}, {"chat menu", "CHAT_STICKER"}, {"hd upload", "HD_UPLOAD"},
             {"read receipts", "GHOST_READ"}, {"read all", "READ_ALL"},
-            {"unsent messages", "KEEP_UNSENT"}, {"double tap like", "NO_DOUBLE_TAP_LIKE"}};
+            {"unsent messages", "KEEP_UNSENT"}, {"double tap like", "NO_DOUBLE_TAP_LIKE"}, {"LIVE record", "LIVE_RECORD"}};
 
     private View statusPage() {
         Page page = new Page(I18n.get(S.STATUS_TITLE), true);
@@ -2585,7 +2586,7 @@ public final class ModSettingsActivity extends Activity {
             Prefs.UNMUTE, Prefs.SELF_REPOST, Prefs.HD_UPLOAD, Prefs.GHOST_ONLINE, Prefs.GHOST_READ,
             Prefs.COMMENT_PHOTOS, Prefs.NO_HASHTAG_LIMIT, Prefs.CAMERA_EXTRAS, Prefs.HIDE_ROOT, Prefs.PIP_FEED,
             Prefs.PREFER_H264, Prefs.PHOTO_BEST, Prefs.NO_MOTION_SENSORS, Prefs.NO_TIKTOK_ANALYTICS, Prefs.UPLOAD_ORIGINAL,
-            Prefs.FEED_REGION_OWN, Prefs.KEEP_UNSENT, Prefs.NO_DOUBLE_TAP_LIKE, Prefs.ACCOUNT_DATE};
+            Prefs.FEED_REGION_OWN, Prefs.KEEP_UNSENT, Prefs.NO_DOUBLE_TAP_LIKE, Prefs.ACCOUNT_DATE, Prefs.LIVE_RECORD};
 
     /**
      * A small mark after a row's title: an outlined "Beta" for settings under test, a plain

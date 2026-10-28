@@ -3,25 +3,21 @@ package com.golda.patchertiktok;
 import android.os.SystemClock;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Keeps a chat message the other person unsent, marked "Unsent" under it. TikTok's message model
- * (found by its "s:is_recalled" ext key) answers isRecalled() and getMessageStatus() for every
- * bind; for a received text message that still has its text, both answer as if it was never
- * unsent. When the unsend arrives, TikTok clears the text through setContent from its recall
- * handlers (RecallMsgFeature / RecallMsgUseCase); that write is skipped. Only messages this phone
- * already received are kept, and your own unsent messages disappear as usual.
- * Idea and first version by RSR1337 (PR #15).
- */
 final class UnsentMessages {
     private static final String FLAG = "s:is_recalled";
     private static final String USER_SERVICE = "com.ss.android.ugc.aweme.framework.services.IUserService";
-    /** How long the signed-in account id is trusted before it is read again (account switches). */
+    private static final String ATTACHMENT_DAO = "IMAttachmentDao getAttachments";
     private static final long OWN_ID_MS = 30_000L;
     private static final Set<String> RECALLERS = new HashSet<>();
+    private static final Set<String> KEPT = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static volatile boolean installed;
     private static volatile ClassLoader classLoader;
     private static volatile Object users;
@@ -46,7 +42,6 @@ final class UnsentMessages {
         RECALLERS.addAll(Discovery.classesUsing("RecallMsgFeature"));
         RECALLERS.addAll(Discovery.classesUsing("RecallMsgUseCase"));
 
-        // Both run on every bind: the switch and TikTok's own answer are checked before anything costly.
         int hooks = Hooks.hookAll(model, "isRecalled", new Hooks.Hook() {
             @Override protected void after(Hooks.Call param) {
                 if (Prefs.on(Prefs.KEEP_UNSENT) && Boolean.TRUE.equals(param.getResult()) && kept(param.thisObject)) {
@@ -65,24 +60,53 @@ final class UnsentMessages {
         });
         Hooks.Hook keepContent = new Hooks.Hook() {
             @Override protected void before(Hooks.Call param) {
-                // A message being built has no text yet, so kept() is false and the stack is never walked.
-                if (Prefs.on(Prefs.KEEP_UNSENT) && !RECALLERS.isEmpty() && kept(param.thisObject) && fromRecall()) {
+                if (Prefs.on(Prefs.KEEP_UNSENT) && !RECALLERS.isEmpty() && param.args.length == 1 && blank(param.args[0])
+                        && kept(param.thisObject) && fromRecall()) {
+                    Object uuid = Reflect.call(param.thisObject, "getUuid");
+                    if (uuid instanceof String && KEPT.add((String) uuid)) MessageTime.unsent((String) uuid);
                     param.setResult(null);
                 }
             }
         };
         int guards = Hooks.hookAll(model, "setContent", keepContent) + Hooks.hookAll(model, "setContentPB", keepContent);
+        int attachments = keepAttachments(loader);
         installed = hooks > 0;
-        RuntimeLog.log("unsent messages: hooks=" + hooks + " guards=" + guards + " recallers=" + RECALLERS.size());
+        RuntimeLog.log("unsent messages: hooks=" + hooks + " guards=" + guards + " attachments=" + attachments
+                + " recallers=" + RECALLERS.size());
     }
 
-    /** Whether this message was unsent and is shown only because it is kept. */
+    private static int keepAttachments(ClassLoader loader) {
+        Class<?> dao = Discovery.firstClass(loader, ATTACHMENT_DAO);
+        if (dao == null) return 0;
+        Hooks.Hook keepRows = new Hooks.Hook() {
+            @Override protected void before(Hooks.Call param) {
+                Object uuid = param.args[0];
+                if (Prefs.on(Prefs.KEEP_UNSENT) && uuid instanceof String && KEPT.contains(uuid) && fromRecall()) {
+                    param.setResult(null);
+                }
+            }
+        };
+        int count = 0;
+        for (Method method : dao.getDeclaredMethods()) {
+            Class<?>[] p = method.getParameterTypes();
+            if (Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class
+                    || p.length != 1 || p[0] != String.class) continue;
+            if (Hooks.tryHook(method, keepRows)) count++;
+        }
+        return count;
+    }
+
     static boolean marked(Object message) {
         if (!installed || message == null || !Prefs.on(Prefs.KEEP_UNSENT)) return false;
         Object ext = Reflect.call(message, "getExt");
         if (!(ext instanceof Map)) return false;
         Map<?, ?> values = (Map<?, ?>) ext;
-        return ("1".equals(values.get(FLAG)) || "true".equals(values.get("s:recalled"))) && kept(message);
+        boolean recalled = "1".equals(values.get(FLAG)) || "true".equals(values.get("s:recalled"));
+        if (!recalled && !KEPT.isEmpty()) {
+            Object uuid = Reflect.call(message, "getUuid");
+            recalled = uuid instanceof String && KEPT.contains(uuid);
+        }
+        return recalled && kept(message);
     }
 
     private static Class<?> model(ClassLoader loader) {
@@ -96,10 +120,21 @@ final class UnsentMessages {
         return null;
     }
 
-    /** A received message that still has its text. */
     private static boolean kept(Object message) {
         Object content = Reflect.call(message, "getContent");
-        return content instanceof String && ((String) content).trim().length() > 2 && !mine(message);
+        boolean text = content instanceof String && ((String) content).trim().length() > 2;
+        if (!text && blank(Reflect.call(message, "getContentPB"))) {
+            Object attachments = Reflect.call(message, "getAttachments");
+            if (!(attachments instanceof Collection) || ((Collection<?>) attachments).isEmpty()) return false;
+        }
+        return !mine(message);
+    }
+
+    private static boolean blank(Object value) {
+        if (value == null) return true;
+        if (value instanceof CharSequence) return ((CharSequence) value).length() == 0;
+        Object size = Reflect.call(value, "size");
+        return size instanceof Integer && (Integer) size == 0;
     }
 
     private static boolean fromRecall() {
@@ -115,7 +150,6 @@ final class UnsentMessages {
         return sender != null && own != null && own.equals(String.valueOf(sender));
     }
 
-    /** The signed-in account id, read from TikTok's user service at most every 30 seconds. */
     private static String ownId() {
         long now = SystemClock.uptimeMillis();
         String cached = ownId;

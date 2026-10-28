@@ -68,6 +68,7 @@ final class Prefs {
     static final String KEEP_UNSENT = "keep_unsent_messages";
     static final String NO_DOUBLE_TAP_LIKE = "no_double_tap_like";
     static final String ACCOUNT_DATE = "account_created_date";
+    static final String LIVE_RECORD = "live_record";
     static final String OLD_VIDEO_DAYS = "old_video_days";
     static final int DEFAULT_OLD_VIDEO_DAYS = 90;
     /** Paid content, shop/product videos and search ads. */
@@ -204,6 +205,7 @@ final class Prefs {
         DEFAULTS.put(KEEP_UNSENT, false);
         DEFAULTS.put(NO_DOUBLE_TAP_LIKE, false);
         DEFAULTS.put(ACCOUNT_DATE, false);
+        DEFAULTS.put(LIVE_RECORD, false);
         DEFAULTS.put(PROMO, true);
         DEFAULTS.put(AI_CONTENT, false);
         DEFAULTS.put(CUSTOM_FILTER, false);

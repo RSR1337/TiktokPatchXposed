@@ -102,6 +102,7 @@ final class Module {
         run("hd upload", () -> HdUpload.install(loader));
         run("read receipts", () -> ReadReceipts.install(loader));
         run("unsent messages", () -> UnsentMessages.install(loader));
+        run("LIVE record", () -> LiveRecord.install(loader));
         run("read all", () -> InboxReadAll.install(loader));
         run("comment author", () -> CommentAuthor.install(loader));
         run("native auto-scroll", () -> AutoScroll.installNative(loader));

@@ -6,6 +6,8 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.format.DateFormat;
 import android.util.TypedValue;
 import android.view.View;
@@ -15,10 +17,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 /**
  * The sent time under each chat message. TikTok binds every message row through one method of its
@@ -34,6 +38,9 @@ final class MessageTime {
     /** The bubble's container in the row; the time lines up under it. */
     private static final String BUBBLE = "f62";
     private static final String LABEL = "tpx_message_time";
+    private static final int UNSENT_COLOR = 0xFFE53935;
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    private static final Map<ViewGroup, Object> ROWS = new WeakHashMap<>();
 
     private MessageTime() { }
 
@@ -73,21 +80,37 @@ final class MessageTime {
         Object container = Reflect.call(slot, "getContainerView");
         if (!(container instanceof ViewGroup)) return;
         ViewGroup row = (ViewGroup) container;
+        Object message = Prefs.on(Prefs.MESSAGE_TIME) || Prefs.on(Prefs.KEEP_UNSENT) ? message(item) : null;
+        ROWS.put(row, message);
+        show(row, message);
+    }
+
+    static void unsent(String uuid) {
+        MAIN.post(() -> {
+            List<ViewGroup> rows = new ArrayList<>();
+            for (Map.Entry<ViewGroup, Object> entry : ROWS.entrySet()) {
+                if (uuid.equals(Reflect.call(entry.getValue(), "getUuid"))) rows.add(entry.getKey());
+            }
+            for (ViewGroup row : rows) show(row, ROWS.get(row));
+        });
+    }
+
+    private static void show(ViewGroup row, Object message) {
         Label label = (Label) Hooks.getExtra(row, LABEL);
         boolean time = Prefs.on(Prefs.MESSAGE_TIME);
-        Object message = time || Prefs.on(Prefs.KEEP_UNSENT) ? message(item) : null;
         Object created = time ? Reflect.call(message, "getCreatedAt") : null;
         Context context = row.getContext();
         String text = created instanceof Long && (Long) created > 0
                 ? format(DateFormat.is24HourFormat(context)).format(new Date((Long) created)) : null;
         // A message the other person unsent but that is kept says so next to its time.
+        String unsent = null;
         if (UnsentMessages.marked(message)) {
-            String unsent = I18n.get(I18n.S.UNSENT_MARK);
+            unsent = I18n.get(I18n.S.UNSENT_MARK);
             text = text == null ? unsent : text + " · " + unsent;
         }
         if (text == null) {
             // Off, or a row without a time (notices): nothing drawn, TikTok's padding stays.
-            if (label != null) label.setText(null);
+            if (label != null) label.setText(null, null);
             return;
         }
         if (label == null) {
@@ -96,7 +119,7 @@ final class MessageTime {
             row.getOverlay().add(label);
             Hooks.setExtra(row, LABEL, label);
         }
-        label.setText(text);
+        label.setText(text, unsent);
         // TikTok sets this padding on every bind; if a bind leaves ours in place, it is not added twice.
         int bottom = row.getPaddingBottom();
         if (bottom == label.applied) bottom = label.base;
@@ -122,8 +145,10 @@ final class MessageTime {
     private static final class Label extends Drawable {
         private final ViewGroup row;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint markPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final int gap;
         private String text;
+        private String mark;
         private View bubble;
         /** TikTok's own bottom padding, and the one set with room for the time. */
         int base;
@@ -134,6 +159,8 @@ final class MessageTime {
             float density = row.getResources().getDisplayMetrics().density;
             paint.setTextSize(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 11, row.getResources().getDisplayMetrics()));
             paint.setColor(0xFF8A8B91);
+            markPaint.setTextSize(paint.getTextSize());
+            markPaint.setColor(UNSENT_COLOR);
             gap = Math.round(2 * density);
         }
 
@@ -142,8 +169,9 @@ final class MessageTime {
             return metrics.descent - metrics.ascent + gap * 2;
         }
 
-        void setText(String value) {
+        void setText(String value, String marked) {
             text = value;
+            mark = marked;
             invalidateSelf();
             row.invalidate();
         }
@@ -168,7 +196,14 @@ final class MessageTime {
             float x = mine ? right - width - gap * 3 : left + gap * 3;
             Paint.FontMetricsInt metrics = paint.getFontMetricsInt();
             float y = row.getHeight() - row.getPaddingBottom() + height() - gap - metrics.descent;
-            canvas.drawText(text, x, Math.min(y, row.getHeight() - metrics.descent), paint);
+            float baseline = Math.min(y, row.getHeight() - metrics.descent);
+            if (mark == null || !text.endsWith(mark)) {
+                canvas.drawText(text, x, baseline, paint);
+                return;
+            }
+            String plain = text.substring(0, text.length() - mark.length());
+            canvas.drawText(plain, x, baseline, paint);
+            canvas.drawText(mark, x + paint.measureText(plain), baseline, markPaint);
         }
 
         /** When the bubble's id is renamed: the biggest shown part of the row that does not span all of it. */
@@ -187,9 +222,15 @@ final class MessageTime {
             return best;
         }
 
-        @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); }
+        @Override public void setAlpha(int alpha) {
+            paint.setAlpha(alpha);
+            markPaint.setAlpha(alpha);
+        }
 
-        @Override public void setColorFilter(ColorFilter filter) { paint.setColorFilter(filter); }
+        @Override public void setColorFilter(ColorFilter filter) {
+            paint.setColorFilter(filter);
+            markPaint.setColorFilter(filter);
+        }
 
         @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
