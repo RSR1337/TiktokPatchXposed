@@ -96,7 +96,7 @@ final class AccentColor {
         }
         // Every Tux icon is tinted through one static (Drawable, color) helper, including the color
         // its own state list picks at draw time, such as the liked heart's selected state.
-        for (Method method : icon.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(icon)) {
             Class<?>[] p = method.getParameterTypes();
             if (java.lang.reflect.Modifier.isStatic(method.getModifiers()) && method.getReturnType() == void.class
                     && p.length == 2 && p[0] == android.graphics.drawable.Drawable.class && p[1] == int.class) {
@@ -105,7 +105,7 @@ final class AccentColor {
             }
         }
         java.util.List<java.lang.reflect.Field> fields = new java.util.ArrayList<>();
-        for (java.lang.reflect.Field field : icon.getDeclaredFields()) {
+        for (java.lang.reflect.Field field : Reflect.fields(icon)) {
             if (field.getType() == android.graphics.drawable.Drawable.class) {
                 field.setAccessible(true);
                 fields.add(field);
@@ -286,7 +286,7 @@ final class AccentColor {
     }
 
     private static void hookColors(Class<?> type) {
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             if (method.isSynthetic() || java.lang.reflect.Modifier.isAbstract(method.getModifiers())) continue;
             if (method.getName().equals("getColor") && method.getReturnType() == int.class) {
                 Hooks.hook(method, COLOR);

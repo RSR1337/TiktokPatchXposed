@@ -35,7 +35,7 @@ final class PlaybackQuality {
         for (String name : MODELS) {
             Class<?> model = Hooks.findClass(name, loader);
             if (model == null) continue;
-            for (Method method : model.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(model)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!method.getName().equals("setBitRate") || p.length != 1 || p[0] != List.class) continue;
                 Hooks.hook(method, new Hooks.Hook() {
@@ -49,7 +49,7 @@ final class PlaybackQuality {
         Class<?> config = Hooks.findClass(PLAYER_CONFIG, loader);
         int hdr = 0;
         if (config != null) {
-            for (Method method : config.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(config)) {
                 if (!method.getName().equals("isForceHdrOff") || method.getReturnType() != boolean.class) continue;
                 Hooks.hook(method, new Hooks.Hook() {
                     @Override protected void after(Hooks.Call param) {

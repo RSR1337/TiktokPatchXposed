@@ -73,7 +73,7 @@ final class StreakApi {
 
     /** {@code List<StreakData> x(List<? extends RecordType>)} on the provider. */
     private static Method listMethod(Class<?> type) {
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (Modifier.isStatic(method.getModifiers()) || p.length != 1 || p[0] != List.class
                     || method.getReturnType() != List.class) continue;
@@ -270,7 +270,7 @@ final class StreakApi {
                 Field field = current.getDeclaredField(name);
                 field.setAccessible(true);
                 return field;
-            } catch (NoSuchFieldException ignored) {
+            } catch (NoSuchFieldException | LinkageError ignored) {
             }
         }
         throw new NoSuchFieldException(type.getName() + "#" + name);

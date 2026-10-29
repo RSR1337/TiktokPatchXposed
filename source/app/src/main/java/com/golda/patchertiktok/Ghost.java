@@ -5,6 +5,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Invisible mode. TikTok reports a story view with its regular play statistics (marked with story
@@ -26,6 +29,19 @@ final class Ghost {
     /** Loading friends' online status, which can also count as a heartbeat. */
     private static final String ONLINE_FETCH = "/activity_status/fetch";
     private static final String TYPING = "com.ss.android.ugc.aweme.im.typingindicator.timer.TypingStatusSenderTimer";
+    /** The story viewer's page; it binds each story or highlight it shows with (int, Aweme). */
+    private static final String PLAY_AREA = "com.ss.android.ugc.aweme.story.feed.immersive.component.StoryImmersivePlayAreaComponent";
+    private static final String AWEME = "com.ss.android.ugc.aweme.feed.model.Aweme";
+
+    /**
+     * Story ids the viewer showed, and whether each was a highlight (its Aweme carries
+     * storyHighlightInfo). The receipt only names the story, so this tells the two apart.
+     */
+    private static final Map<String, Boolean> SHOWN = Collections.synchronizedMap(new LinkedHashMap<String, Boolean>(64, 0.75f, true) {
+        @Override protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) { return size() > 300; }
+    });
+    /** False when the viewer was not found; then either switch hides both kinds. */
+    private static volatile boolean highlightsKnown;
 
     private Ghost() { }
 
@@ -37,7 +53,7 @@ final class Ghost {
             return;
         }
         int hooks = 0;
-        for (Method method : interceptor.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(interceptor)) {
             Class<?>[] p = method.getParameterTypes();
             int index = -1;
             for (int i = 0; i < p.length; i++) if (p[i] == request) index = i;
@@ -45,8 +61,8 @@ final class Ghost {
             int at = index;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void before(Hooks.Call param) {
-                    if (!Prefs.on(Prefs.GHOST_STORIES) && !Prefs.on(Prefs.GHOST_PROFILE) && !Prefs.on(Prefs.GHOST_POSTS)
-                            && !Prefs.on(Prefs.GHOST_ONLINE)) return;
+                    if (!Prefs.on(Prefs.GHOST_STORIES) && !Prefs.on(Prefs.GHOST_HIGHLIGHTS) && !Prefs.on(Prefs.GHOST_PROFILE)
+                            && !Prefs.on(Prefs.GHOST_POSTS) && !Prefs.on(Prefs.GHOST_ONLINE)) return;
                     Object req = param.args[at];
                     // The interceptor's helpers pass the same request along; decide once.
                     if (req == null || Hooks.getExtra(req, CHECKED) != null) return;
@@ -58,7 +74,52 @@ final class Ghost {
             });
             hooks++;
         }
-        RuntimeLog.log("invisible mode: hooks=" + hooks + ", typing=" + installTyping(loader));
+        RuntimeLog.log("invisible mode: hooks=" + hooks + ", typing=" + installTyping(loader)
+                + ", highlights=" + installHighlights(loader));
+    }
+
+    /** Remembers, for every story the viewer binds, whether it belongs to a profile highlight. */
+    private static int installHighlights(ClassLoader loader) {
+        Class<?> area = Hooks.findClass(PLAY_AREA, loader);
+        Class<?> aweme = Hooks.findClass(AWEME, loader);
+        if (area == null || aweme == null) return 0;
+        int count = 0;
+        for (Method method : Reflect.methods(area)) {
+            Class<?>[] p = method.getParameterTypes();
+            if (p.length != 2 || p[0] != int.class || p[1] != aweme || method.getReturnType() != void.class
+                    || java.lang.reflect.Modifier.isStatic(method.getModifiers())) continue;
+            if (Hooks.tryHook(method, new Hooks.Hook() {
+                @Override protected void after(Hooks.Call param) {
+                    Object id = Reflect.call(param.args[1], "getAid");
+                    if (id instanceof String) SHOWN.put((String) id, Reflect.get(param.args[1], "storyHighlightInfo") != null);
+                }
+            })) count++;
+        }
+        highlightsKnown = count > 0;
+        return count;
+    }
+
+    /** Whether a story receipt or story statistics may go out under the story and highlight switches. */
+    private static boolean hidesStory(String text) {
+        boolean stories = Prefs.on(Prefs.GHOST_STORIES), highlights = Prefs.on(Prefs.GHOST_HIGHLIGHTS);
+        if (stories == highlights) return stories;
+        if (!highlightsKnown) return true;
+        for (String key : new String[]{"story_id", "item_id", "aweme_id"}) {
+            String id = param(text, key);
+            Boolean highlight = id == null ? null : SHOWN.get(id);
+            if (highlight != null) return highlight ? highlights : stories;
+        }
+        // Not shown by the known viewer (a new TikTok screen?): hidden, so a view never leaks by mistake.
+        return true;
+    }
+
+    /** A form or query value from "&key=value&...", or null. */
+    private static String param(String text, String key) {
+        int at = text.indexOf("&" + key + "=");
+        if (at < 0) at = text.indexOf("?" + key + "=");
+        if (at < 0) return null;
+        int start = at + key.length() + 2, end = text.indexOf('&', start);
+        return text.substring(start, end < 0 ? text.length() : end);
     }
 
     /**
@@ -69,7 +130,7 @@ final class Ghost {
         Class<?> timer = Hooks.findClass(TYPING, loader);
         if (timer == null) return 0;
         int count = 0;
-        for (Method method : timer.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(timer)) {
             Class<?>[] p = method.getParameterTypes();
             if (p.length != 1 || p[0] != String.class || method.getReturnType() != void.class
                     || java.lang.reflect.Modifier.isStatic(method.getModifiers())) continue;
@@ -106,12 +167,14 @@ final class Ghost {
         if (!(value instanceof String)) return false;
         String path = (String) value;
         if (Prefs.on(Prefs.GHOST_PROFILE) && path.contains(PROFILE_VIEW)) return true;
-        if (Prefs.on(Prefs.GHOST_STORIES) && path.contains(STORY_VIEW)) return true;
         if (Prefs.on(Prefs.GHOST_ONLINE) && path.contains(ONLINE_REPORT)) return true;
+        if (path.contains(STORY_VIEW)) {
+            Object url = Reflect.get(request, "url");
+            return hidesStory("&" + body(request) + "&" + (url instanceof String ? url : ""));
+        }
         if (!path.contains(STATS)) return false;
         String body = "&" + body(request);
-        if (Prefs.on(Prefs.GHOST_STORIES)
-                && (body.contains("&story_consumption_type=") || body.contains("&user_story_version="))) return true;
+        if ((body.contains("&story_consumption_type=") || body.contains("&user_story_version=")) && hidesStory(body)) return true;
         // With view history on, the people you follow see which of their videos you watched
         // (follow_status 1 = following, 2 = friends).
         return Prefs.on(Prefs.GHOST_POSTS) && (body.contains("&follow_status=1") || body.contains("&follow_status=2"));

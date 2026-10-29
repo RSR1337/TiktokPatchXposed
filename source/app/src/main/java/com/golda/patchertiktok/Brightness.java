@@ -34,7 +34,7 @@ final class Brightness {
     /** Static void (x, LifecycleOwner, y) methods of {@code type} (named {@code name} when given). */
     private static int hookStarts(Class<?> type, String name, Class<?> owner) {
         int hooks = 0;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (!Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class || p.length != 3
                     || p[1] != owner || (name != null && !method.getName().equals(name))) continue;

@@ -122,7 +122,7 @@ final class AbOverrides {
 
     private static int hookGetters(Class<?> type) {
         int count = 0;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             Class<?> result = method.getReturnType();
             if (result == void.class || Modifier.isAbstract(method.getModifiers())) continue;
             int keyIndex = -1;

@@ -69,7 +69,7 @@ final class Unmute {
         Set<String> mute = owners(Discovery.methodsCalling(MUTE_INFO, "isMute"), PLAYER);
         status.retainAll(mute);
         int count = 0;
-        for (Method method : player.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(player)) {
             Class<?>[] p = method.getParameterTypes();
             if (!status.contains(method.getName()) || Modifier.isAbstract(method.getModifiers())
                     || method.getReturnType() != void.class || p.length != 3 || p[0] != aweme
@@ -104,7 +104,7 @@ final class Unmute {
         Class<?> service = Hooks.findClass(SEARCH_MUTE, loader);
         if (service == null) return 0;
         int count = 0;
-        for (Method method : service.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(service)) {
             Class<?>[] p = method.getParameterTypes();
             if (method.getReturnType() != boolean.class || p.length != 2 || p[0] != aweme || p[1] != String.class
                     || Modifier.isAbstract(method.getModifiers())) continue;

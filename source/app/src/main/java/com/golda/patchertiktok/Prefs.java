@@ -50,6 +50,8 @@ final class Prefs {
     static final String FEED_REGION = "feed_region";
     static final String AUTO_STREAK = "auto_streak";
     static final String GHOST_STORIES = "ghost_stories";
+    /** Profile highlights; until set, it follows {@link #GHOST_STORIES}, which covered them before (#2). */
+    static final String GHOST_HIGHLIGHTS = "ghost_highlights";
     static final String GHOST_PROFILE = "ghost_profile_views";
     static final String GHOST_POSTS = "ghost_post_views";
     /** Chats: no "typing…" and no "online" heartbeat. */
@@ -68,6 +70,8 @@ final class Prefs {
     static final String KEEP_UNSENT = "keep_unsent_messages";
     static final String NO_DOUBLE_TAP_LIKE = "no_double_tap_like";
     static final String ACCOUNT_DATE = "account_created_date";
+    /** A REC button in LIVE rooms. Idea and first version by RSR1337 (PR #16). */
+    static final String LIVE_RECORD = "live_record";
     static final String OLD_VIDEO_DAYS = "old_video_days";
     static final int DEFAULT_OLD_VIDEO_DAYS = 90;
     /** Paid content, shop/product videos and search ads. */
@@ -192,6 +196,7 @@ final class Prefs {
         DEFAULTS.put(REGION_LANGUAGE, true);
         DEFAULTS.put(FEED_REGION_OWN, false);
         DEFAULTS.put(GHOST_STORIES, false);
+        DEFAULTS.put(GHOST_HIGHLIGHTS, false);
         DEFAULTS.put(GHOST_PROFILE, false);
         DEFAULTS.put(GHOST_POSTS, false);
         DEFAULTS.put(GHOST_TYPING, false);
@@ -204,6 +209,7 @@ final class Prefs {
         DEFAULTS.put(KEEP_UNSENT, false);
         DEFAULTS.put(NO_DOUBLE_TAP_LIKE, false);
         DEFAULTS.put(ACCOUNT_DATE, false);
+        DEFAULTS.put(LIVE_RECORD, false);
         DEFAULTS.put(PROMO, true);
         DEFAULTS.put(AI_CONTENT, false);
         DEFAULTS.put(CUSTOM_FILTER, false);
@@ -271,6 +277,11 @@ final class Prefs {
 
     private static void read(SharedPreferences loaded) {
         for (String key : DEFAULTS.keySet()) FLAGS.put(key, loaded.getBoolean(key, DEFAULTS.get(key)));
+        // Saved right away: otherwise a later change of the story switch would move this one too.
+        if (!loaded.contains(GHOST_HIGHLIGHTS)) {
+            FLAGS.put(GHOST_HIGHLIGHTS, FLAGS.get(GHOST_STORIES));
+            loaded.edit().putBoolean(GHOST_HIGHLIGHTS, FLAGS.get(GHOST_STORIES)).apply();
+        }
         region = Regions.normalize(loaded.getString(REGION, DEFAULT_REGION));
         oldVideoDays = Math.max(1, loaded.getInt(OLD_VIDEO_DAYS, DEFAULT_OLD_VIDEO_DAYS));
         for (String key : new String[]{FILTER_WORDS, FILTER_AUTHORS, SPEEDS, TRANSLATE_EXCLUDE, STREAK_STICKER,
@@ -325,6 +336,8 @@ final class Prefs {
         if (!"TiktokPatchXposed".equals(json.optString("module"))) return false;
         SharedPreferences.Editor editor = current.edit();
         for (String key : DEFAULTS.keySet()) if (json.has(key)) editor.putBoolean(key, json.optBoolean(key));
+        // Backups from before 4.4.3: the story switch covered highlights.
+        if (json.has(GHOST_STORIES) && !json.has(GHOST_HIGHLIGHTS)) editor.putBoolean(GHOST_HIGHLIGHTS, json.optBoolean(GHOST_STORIES));
         for (String key : TEXT_KEYS) if (json.has(key)) editor.putString(key, json.optString(key));
         for (String key : LONG_KEYS) if (json.has(key)) editor.putLong(key, json.optLong(key));
         if (json.has(OLD_VIDEO_DAYS)) editor.putInt(OLD_VIDEO_DAYS, Math.max(1, json.optInt(OLD_VIDEO_DAYS)));

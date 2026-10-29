@@ -67,7 +67,7 @@ final class ReadReceipts {
         try {
             conversation = type.getDeclaredField("conversation_id");
             conversation.setAccessible(true);
-        } catch (NoSuchFieldException missing) {
+        } catch (NoSuchFieldException | LinkageError missing) {
             return 0;
         }
         return Hooks.hookConstructors(type, new Hooks.Hook() {
@@ -98,7 +98,7 @@ final class ReadReceipts {
             Constructor<?> answer = result(loader, owner, name);
             if (answer == null) continue;
             success = answer;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (method.getName().equals(name) && p.length == 2 && p[0] == request) {
                     Hooks.hook(method, SEND);
@@ -123,7 +123,7 @@ final class ReadReceipts {
                 Constructor<?> constructor = type.getDeclaredConstructor(boolean.class, String.class, int.class, Exception.class);
                 constructor.setAccessible(true);
                 return constructor;
-            } catch (NoSuchMethodException other) {
+            } catch (NoSuchMethodException | LinkageError other) {
                 // Another object built in that method.
             }
         }
@@ -162,7 +162,7 @@ final class ReadReceipts {
         Class<?> owner = Discovery.firstClass(loader, LEGACY);
         if (owner == null) return 0;
         int hooks = 0;
-        for (Method method : owner.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(owner)) {
             Class<?>[] p = method.getParameterTypes();
             if (Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class) continue;
             if (p.length == 4 && p[0] == int.class && p[1] == body && p[2] == String.class && p[3] == int.class) {
@@ -177,7 +177,7 @@ final class ReadReceipts {
                 force.setAccessible(true);
             }
         }
-        Constructor<?>[] constructors = owner.getDeclaredConstructors();
+        Constructor<?>[] constructors = Reflect.constructors(owner);
         if (constructors.length == 1 && constructors[0].getParameterTypes().length == 1) {
             handlerConstructor = constructors[0];
             handlerConstructor.setAccessible(true);
@@ -220,7 +220,7 @@ final class ReadReceipts {
     private static Object coreOf(Object useCase) {
         if (handlerConstructor == null) return null;
         Class<?> type = handlerConstructor.getParameterTypes()[0];
-        for (Field field : useCase.getClass().getDeclaredFields()) {
+        for (Field field : Reflect.fields(useCase.getClass())) {
             if (!type.isAssignableFrom(field.getType())) continue;
             try {
                 field.setAccessible(true);

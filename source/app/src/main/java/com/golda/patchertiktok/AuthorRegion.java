@@ -46,14 +46,14 @@ final class AuthorRegion {
             return;
         }
         currentAweme.setAccessible(true);
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (method.getParameterCount() == 0 && PAGER.equals(method.getReturnType().getName())) {
                 method.setAccessible(true);
                 pager = method;
             }
         }
         int hooks = 0;
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -131,7 +131,7 @@ final class AuthorRegion {
         Class<?> component = Hooks.findClass(ACCOUNT_NAME, loader);
         Method label = null;
         if (component != null) {
-            for (Method method : component.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(component)) {
                 if (method.getParameterCount() == 0 && TextView.class.isAssignableFrom(method.getReturnType())) {
                     if (label != null) {
                         label = null;
@@ -148,7 +148,7 @@ final class AuthorRegion {
         label.setAccessible(true);
         Method nameView = label;
         // The profile's user arrives through the view model; any method handing it a User counts.
-        for (Method method : model.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(model)) {
             int index = -1;
             Class<?>[] types = method.getParameterTypes();
             for (int i = 0; i < types.length; i++) if (types[i] == user) index = i;
@@ -167,7 +167,7 @@ final class AuthorRegion {
             });
         }
         // The name line binds after the data; mark it whenever the component refreshes.
-        for (Method method : component.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(component)) {
             if (method.getReturnType() != void.class || Modifier.isStatic(method.getModifiers())) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {

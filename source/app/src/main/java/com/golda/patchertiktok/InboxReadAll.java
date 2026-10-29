@@ -42,7 +42,7 @@ final class InboxReadAll {
         Class<?> tab = Hooks.findClass(TAB, classLoader);
         store = Discovery.firstClass(classLoader, ALL_QUERY);
         if (store != null) {
-            for (Method method : store.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(store)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length == 5 && p[0] == int.class && p[1] == int.class && p[2].isEnum() && p[4] == boolean.class) {
                     allChats = method;
@@ -55,7 +55,7 @@ final class InboxReadAll {
             return;
         }
         int hooks = 0;
-        for (Method method : tab.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(tab)) {
             if (method.getReturnType() != View.class || method.getParameterTypes().length != 1
                     || Modifier.isStatic(method.getModifiers())) continue;
             Hooks.hook(method, new Hooks.Hook() {
@@ -237,7 +237,7 @@ final class InboxReadAll {
 
     /** Classes already checked for the bulk method, with the answer. */
     private static final Map<Class<?>, Method> BULK = new java.util.concurrent.ConcurrentHashMap<>();
-    private static final Method NONE = InboxReadAll.class.getDeclaredMethods()[0];
+    private static final Method NONE = Reflect.methods(InboxReadAll.class)[0];
 
     /**
      * The chat list's bulk "mark read" that takes chats, not chat ids. Both take (List, callback),
@@ -247,7 +247,7 @@ final class InboxReadAll {
         Method known = BULK.get(type);
         if (known != null) return known == NONE ? null : known;
         List<Method> pairs = new java.util.ArrayList<>();
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (method.getReturnType() == void.class && p.length == 2 && p[0] == List.class
                     && !Modifier.isStatic(method.getModifiers()) && !p[1].isPrimitive()) pairs.add(method);
@@ -283,7 +283,7 @@ final class InboxReadAll {
             for (Class<?> owner = value.getClass(); owner != null && owner != Object.class; owner = owner.getSuperclass()) {
                 String name = owner.getName();
                 if (name.startsWith("java.") || name.startsWith("android.") || name.startsWith("kotlin.")) break;
-                for (Field field : owner.getDeclaredFields()) {
+                for (Field field : Reflect.fields(owner)) {
                     Class<?> kind = field.getType();
                     if (Modifier.isStatic(field.getModifiers()) || kind.isPrimitive() || kind == String.class
                             || View.class.isAssignableFrom(kind)) continue;
@@ -304,7 +304,7 @@ final class InboxReadAll {
     private static List<?> list(Object result) {
         if (result instanceof List) return (List<?>) result;
         if (result == null) return null;
-        for (Field field : result.getClass().getDeclaredFields()) {
+        for (Field field : Reflect.fields(result.getClass())) {
             try {
                 field.setAccessible(true);
                 Object value = field.get(result);

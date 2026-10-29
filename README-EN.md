@@ -7,7 +7,7 @@ turns on features TikTok rolls out only to some people, and adds many small thin
 everywhere, your own color, font and AMOLED theme, hiding parts of the screen, country flags,
 invisible mode and auto streaks. All settings live right inside TikTok.
 
-Current version: **4.4.2**. Tested on **TikTok 47.4.3** and **47.1.4** (Google Play and universal APK),
+Current version: **4.4.3**. Tested on **TikTok 47.4.3** and **47.1.4** (Google Play and universal APK),
 **Android 16**. Most features find what they need in TikTok by themselves, so
 they survive TikTok updates.
 
@@ -79,7 +79,7 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **New profile layout**, 🧪 **account creation date** under the name, **hide stories in the Inbox**.
 - **Time on messages**: under every chat message.
 - **"Read all"**: hold the Inbox tab.
-- 🧪 **Keep unsent messages**: a message the other person unsent stays, marked "Unsent".
+- 🧪 **Keep unsent messages**: a message the other person unsent stays, marked "Unsent" in red; photos, videos and stickers are still in beta.
 
 ### Comments
 - **TikTok's translate buttons**: an icon on every foreign comment and "Translate all" in the
@@ -93,12 +93,13 @@ Features marked 🧪 work but are not fully tested. All new features are off by 
 - **No watermark**, **download any video**, **quality picker** and "Audio only".
 - **All photos from a carousel**, **stickers and photos from comments**, **stickers from chats**.
 - **Save stories and highlights** (hold a story) and **profile photos** (hold the enlarged photo).
+- 🧪 **Record LIVEs**: a REC button in a LIVE records it in the quality you pick to Movies/TikTok (MP4), or copies the stream link. Android 10+.
 - 🧪 **Upload in HD**, as with TikTok's "Upload HD" switched on, and a 🧪 bitrate choice: 12, 20 or 30 Mbit/s.
 - 🧪 **Upload the original (up to 4K)**: an unedited video goes up as the file itself, without TikTok re-encoding it.
 - **Clean links** (no tracking), **links in your browser**, **screenshots everywhere**.
 
 ### Privacy
-- 🧪 **Invisible mode**: not showing up in story (and highlight), profile and video views.
+- 🧪 **Invisible mode**: not showing up in story and highlight views (separate switches), profile and video views.
 - **In chats:** hide "typing…", 🧪 "online" and 🧪 "Read" (with "Mark as read" in a message's menu
   and "Read" when you reply).
 - 🧪 **Block location**, 🧪 **hide VPN**, 🧪 **random device ID**, 🧪 **hide root**,

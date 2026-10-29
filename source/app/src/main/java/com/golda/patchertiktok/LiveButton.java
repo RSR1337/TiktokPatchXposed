@@ -19,7 +19,7 @@ final class LiveButton {
             RuntimeLog.log("LIVE button: generator not found");
             return;
         }
-        for (Method method : generator.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(generator)) {
             Class<?>[] p = method.getParameterTypes();
             if ("enabled".equals(method.getName()) && method.getReturnType() == boolean.class && p.length == 0) {
                 Hooks.hook(method, new Hooks.Hook() {
@@ -61,7 +61,7 @@ final class LiveButton {
     private static void hideIcons(Object generator) {
         if (generator == null) return;
         for (Class<?> type = generator.getClass(); type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (!ImageView.class.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);

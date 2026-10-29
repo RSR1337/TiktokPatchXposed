@@ -34,7 +34,7 @@ final class CleanScreen {
         }
         Method event = null;
         List<Method> changes = new ArrayList<>();
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (Modifier.isAbstract(method.getModifiers()) || method.isSynthetic() || method.getReturnType() != void.class) continue;
             Class<?>[] p = method.getParameterTypes();
             if (method.getName().equals("onClearModeEvent") && p.length == 1) event = method;

@@ -118,7 +118,7 @@ final class Hooks {
     /** Hooks every non-abstract declared method with this name. */
     static int hookAll(Class<?> type, String name, Hook hook) {
         int count = 0;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             if (!method.getName().equals(name) || Modifier.isAbstract(method.getModifiers())) continue;
             hook(method, hook);
             count++;
@@ -142,7 +142,7 @@ final class Hooks {
 
     static int hookConstructors(Class<?> type, Hook hook) {
         int count = 0;
-        for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+        for (Constructor<?> constructor : Reflect.constructors(type)) {
             hook(constructor, hook);
             count++;
         }
@@ -155,7 +155,7 @@ final class Hooks {
         for (int i = 0; i < parameters.length; i++) parameters[i] = (Class<?>) typesAndHook[i];
         try {
             hook(type.getDeclaredMethod(name, parameters), (Hook) typesAndHook[parameters.length]);
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             throw new NoSuchMethodError(type.getName() + "#" + name);
         }
     }
@@ -182,7 +182,7 @@ final class Hooks {
                 field.setAccessible(true);
                 field.set(target, value);
                 return;
-            } catch (NoSuchFieldException next) {
+            } catch (NoSuchFieldException | LinkageError next) {
                 // Keep looking in the superclass.
             } catch (IllegalAccessException error) {
                 throw new IllegalStateException(error);

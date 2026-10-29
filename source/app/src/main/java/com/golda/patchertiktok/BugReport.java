@@ -16,7 +16,8 @@ import java.util.Map;
 /**
  * Everything an issue needs, as one text the user saves or copies: module and TikTok versions,
  * whether TikTok runs as 32 or 64 bit, device and memory, the switches that are on, features that
- * did not start, the last Java crashes and the module log of this and the previous launch. No
+ * did not start, why TikTok closed lately, the last Java crashes and the module log of this and
+ * the previous launch. No
  * account data, texts the user typed or chat ids are included.
  */
 final class BugReport {
@@ -71,8 +72,9 @@ final class BugReport {
         }
         if (problems == 0) out.append("(none)\n");
 
+        exits(out, manager);
         File cache = context.getCacheDir();
-        section(out, "Java crashes (native crashes and freezes are not recorded here)", new File(cache, CrashLog.FILE));
+        section(out, "Java crashes (native crashes and freezes are in \"Why TikTok closed\")", new File(cache, CrashLog.FILE));
         section(out, "Module log, this launch", new File(cache, RuntimeLog.FILE));
         section(out, "Module log, previous launch", new File(cache, RuntimeLog.PREVIOUS));
         String text = out.toString();
@@ -86,6 +88,99 @@ final class BugReport {
     }
 
     static final String FILE = "patcher-report.txt";
+    /** Text kept from one native crash or freeze trace. */
+    private static final int TRACE_LIMIT = 6 * 1024;
+
+    /**
+     * Android 11+ remembers why TikTok's processes ended, native crashes and freezes included,
+     * which TikTok's own crash handler and the module cannot catch. A native crash comes with its
+     * tombstone, whose readable parts name the library and function that crashed (#11).
+     */
+    private static void exits(StringBuilder out, ActivityManager manager) {
+        out.append("\n--- Why TikTok closed (Android)\n");
+        if (Build.VERSION.SDK_INT < 30 || manager == null) {
+            out.append("(needs Android 11)\n");
+            return;
+        }
+        try {
+            java.util.List<android.app.ApplicationExitInfo> exits = manager.getHistoricalProcessExitReasons(null, 0, 8);
+            if (exits.isEmpty()) out.append("(nothing recorded)\n");
+            java.text.SimpleDateFormat time = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US);
+            int traces = 0;
+            for (android.app.ApplicationExitInfo exit : exits) {
+                out.append(time.format(new java.util.Date(exit.getTimestamp()))).append(' ')
+                        .append(reason(exit.getReason())).append(", status ").append(exit.getStatus())
+                        .append(", ").append(exit.getProcessName());
+                if (exit.getDescription() != null) out.append(": ").append(exit.getDescription());
+                out.append('\n');
+                int reason = exit.getReason();
+                if (traces < 2 && (reason == android.app.ApplicationExitInfo.REASON_CRASH_NATIVE
+                        || reason == android.app.ApplicationExitInfo.REASON_ANR)) {
+                    String trace = trace(exit, reason == android.app.ApplicationExitInfo.REASON_ANR);
+                    if (trace != null) {
+                        out.append(trace).append('\n');
+                        traces++;
+                    }
+                }
+            }
+        } catch (Throwable error) {
+            out.append("(unavailable: ").append(error.getClass().getSimpleName()).append(")\n");
+        }
+    }
+
+    private static String reason(int reason) {
+        switch (reason) {
+            case android.app.ApplicationExitInfo.REASON_CRASH: return "Java crash";
+            case android.app.ApplicationExitInfo.REASON_CRASH_NATIVE: return "native crash";
+            case android.app.ApplicationExitInfo.REASON_ANR: return "freeze (ANR)";
+            case android.app.ApplicationExitInfo.REASON_LOW_MEMORY: return "low memory";
+            case android.app.ApplicationExitInfo.REASON_INITIALIZATION_FAILURE: return "startup failed";
+            case android.app.ApplicationExitInfo.REASON_EXIT_SELF: return "exited itself";
+            case android.app.ApplicationExitInfo.REASON_SIGNALED: return "killed by a signal";
+            case android.app.ApplicationExitInfo.REASON_USER_REQUESTED: return "closed by the user";
+            case android.app.ApplicationExitInfo.REASON_USER_STOPPED: return "force stopped";
+            case android.app.ApplicationExitInfo.REASON_EXCESSIVE_RESOURCE_USAGE: return "too much battery or CPU";
+            case android.app.ApplicationExitInfo.REASON_DEPENDENCY_DIED: return "a needed app closed";
+            case android.app.ApplicationExitInfo.REASON_OTHER: return "closed by the system";
+            case android.app.ApplicationExitInfo.REASON_FREEZER: return "frozen in background";
+            case android.app.ApplicationExitInfo.REASON_PACKAGE_UPDATED: return "an app it uses was updated";
+            default: return "reason " + reason;
+        }
+    }
+
+    /**
+     * Words of a tombstone that name code: libraries, compiled code, mangled functions and the
+     * signal. Memory dumps in it may hold the user's text, so nothing else is kept.
+     */
+    private static boolean code(String word) {
+        return word.contains(".so") || word.contains(".oat") || word.contains(".apk") || word.contains(".odex")
+                || word.contains(".vdex") || word.startsWith("_Z") || word.startsWith("SIG") || word.startsWith("Java_");
+    }
+
+    /** A freeze trace is text: its start. A native tombstone is binary: its readable words. */
+    private static String trace(android.app.ApplicationExitInfo exit, boolean text) {
+        try (java.io.InputStream in = exit.getTraceInputStream()) {
+            if (in == null) return null;
+            byte[] data = new byte[text ? TRACE_LIMIT : 256 * 1024];
+            int read = 0;
+            for (int n; read < data.length && (n = in.read(data, read, data.length - read)) > 0; ) read += n;
+            if (text) return new String(data, 0, read, StandardCharsets.UTF_8);
+            StringBuilder words = new StringBuilder();
+            int start = -1;
+            for (int i = 0; i <= read && words.length() < TRACE_LIMIT; i++) {
+                boolean printable = i < read && data[i] >= 0x20 && data[i] < 0x7f;
+                if (printable && start < 0) start = i;
+                if (!printable && start >= 0) {
+                    String word = i - start >= 4 ? new String(data, start, i - start, StandardCharsets.US_ASCII) : "";
+                    if (code(word)) words.append(word).append('\n');
+                    start = -1;
+                }
+            }
+            return words.length() == 0 ? null : words.toString();
+        } catch (Throwable error) {
+            return "(trace unreadable: " + error.getClass().getSimpleName() + ")";
+        }
+    }
 
     private static void section(StringBuilder out, String title, File file) {
         out.append("\n--- ").append(title).append('\n');

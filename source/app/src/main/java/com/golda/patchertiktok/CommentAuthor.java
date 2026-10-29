@@ -42,7 +42,7 @@ final class CommentAuthor {
             RuntimeLog.log("comment author unavailable: comment cell not found");
             return;
         }
-        for (Method method : cell.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(cell)) {
             if (method.getReturnType() == comment && method.getParameterCount() == 0 && !Modifier.isStatic(method.getModifiers())) {
                 method.setAccessible(true);
                 COMMENTS.add(method);
@@ -50,7 +50,7 @@ final class CommentAuthor {
         }
         itemView = Reflect.field(cell, "itemView");
         int binds = 0;
-        for (Method method : cell.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(cell)) {
             if (Modifier.isStatic(method.getModifiers()) || Modifier.isAbstract(method.getModifiers())
                     || method.getReturnType() != void.class || method.getParameterCount() != 1) continue;
             List<String> calls = Discovery.invokedBy(cell.getName(), method.getName());

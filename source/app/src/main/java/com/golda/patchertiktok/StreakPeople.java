@@ -60,12 +60,12 @@ final class StreakPeople {
 
     /** {owner, method}: a getter on the service whose result has exactly one method of this shape returning IMUser. */
     private static Object[] reader(Object service, Class<?> user, Class<?>... shape) throws ReflectiveOperationException {
-        for (Method getter : service.getClass().getMethods()) {
+        for (Method getter : Reflect.publicMethods(service.getClass())) {
             if (getter.getParameterCount() != 0 || getter.getReturnType().isPrimitive()
                     || Modifier.isStatic(getter.getModifiers()) || getter.getDeclaringClass() == Object.class) continue;
             Method only = null;
             int count = 0;
-            for (Method method : getter.getReturnType().getMethods()) {
+            for (Method method : Reflect.publicMethods(getter.getReturnType())) {
                 if (method.getReturnType() == user && java.util.Arrays.equals(method.getParameterTypes(), shape)) {
                     only = method;
                     count++;

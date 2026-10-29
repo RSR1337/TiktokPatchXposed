@@ -41,7 +41,7 @@ final class ResumePosition {
             return;
         }
         currentAweme = RenderedAdSkip.currentAweme(panelType);
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (method.getParameterTypes().length == 0 && ABILITY.equals(method.getReturnType().getName())) {
                 method.setAccessible(true);
                 playerAbility = method;
@@ -54,7 +54,7 @@ final class ResumePosition {
         }
         currentAweme.setAccessible(true);
         int hooks = 0;
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -125,7 +125,7 @@ final class ResumePosition {
             Method method = manager.getClass().getMethod("seek", float.class);
             method.setAccessible(true);
             return method;
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             return null;
         }
     }

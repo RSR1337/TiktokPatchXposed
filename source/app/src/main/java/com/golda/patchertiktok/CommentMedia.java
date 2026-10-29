@@ -142,7 +142,7 @@ final class CommentMedia {
             for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
                 String name = type.getName();
                 if (name.startsWith("android.") || name.startsWith("java.")) break;
-                for (Field field : type.getDeclaredFields()) {
+                for (Field field : Reflect.fields(type)) {
                     Class<?> kind = field.getType();
                     if (Modifier.isStatic(field.getModifiers()) || kind.isPrimitive() || kind == String.class
                             || View.class.isAssignableFrom(kind) || Drawable.class.isAssignableFrom(kind)

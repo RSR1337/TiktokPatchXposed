@@ -73,7 +73,7 @@ final class AvatarDownload {
     private static Object fieldOf(Object target, Class<?> type) {
         Object found = null;
         for (Class<?> owner = target.getClass(); owner != null && owner != Activity.class; owner = owner.getSuperclass()) {
-            for (Field field : owner.getDeclaredFields()) {
+            for (Field field : Reflect.fields(owner)) {
                 if (Modifier.isStatic(field.getModifiers()) || !type.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);

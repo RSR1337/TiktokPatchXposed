@@ -56,7 +56,7 @@ final class SeenVideos {
         Class<?> player = Hooks.findClass(PLAYER, loader);
         int hooks = 0;
         if (player != null) {
-            for (java.lang.reflect.Method method : player.getDeclaredMethods()) {
+            for (java.lang.reflect.Method method : Reflect.methods(player)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!method.getName().equals("onPlayProgressChange") || p.length != 3 || p[0] != String.class
                         || p[1] != long.class || p[2] != long.class) continue;

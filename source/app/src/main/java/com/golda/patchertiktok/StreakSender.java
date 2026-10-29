@@ -45,7 +45,7 @@ final class StreakSender {
             Class<?> manager = Class.forName(
                     "com.ss.android.ugc.aweme.im.lightinteract.impl.serviceimpl.LightInteractionManager", false, loader);
             resolved = null;
-            for (Field field : manager.getDeclaredFields()) {
+            for (Field field : Reflect.fields(manager)) {
                 if (Modifier.isStatic(field.getModifiers()) && manager.isAssignableFrom(field.getType())) {
                     field.setAccessible(true);
                     resolved = field.get(null);

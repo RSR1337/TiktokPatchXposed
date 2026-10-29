@@ -109,7 +109,7 @@ final class ExternalLinks {
         };
         int hooks = hookAll(Activity.class, "startActivity", launch)
                 + hookAll(ContextWrapper.class, "startActivity", launch);
-        for (Method method : Instrumentation.class.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(Instrumentation.class)) {
             if (!method.getName().equals("execStartActivity") || Modifier.isAbstract(method.getModifiers())) continue;
             for (Class<?> parameter : method.getParameterTypes()) {
                 if (parameter != Intent.class) continue;
@@ -135,7 +135,7 @@ final class ExternalLinks {
         Class<?> data = Hooks.findClass(LINK_DATA, loader);
         if (component == null || data == null) return 0;
         int hooks = 0;
-        for (Method method : component.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(component)) {
             Class<?>[] p = method.getParameterTypes();
             if (p.length != 1 || p[0] != data || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
@@ -249,7 +249,7 @@ final class ExternalLinks {
                         || Reflect.field(spark, "containerId") == null) return null;
                 SparkLookup lookup = new SparkLookup();
                 int hooks = 0;
-                for (Constructor<?> constructor : spark.getDeclaredConstructors()) {
+                for (Constructor<?> constructor : Reflect.constructors(spark)) {
                     try {
                         Hooks.hook(constructor, new Hooks.Hook() {
                             @Override protected void after(Hooks.Call param) {

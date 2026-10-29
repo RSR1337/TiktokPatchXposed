@@ -102,6 +102,7 @@ final class Module {
         run("hd upload", () -> HdUpload.install(loader));
         run("read receipts", () -> ReadReceipts.install(loader));
         run("unsent messages", () -> UnsentMessages.install(loader));
+        run("LIVE record", () -> LiveRecord.install(loader));
         run("read all", () -> InboxReadAll.install(loader));
         run("comment author", () -> CommentAuthor.install(loader));
         run("native auto-scroll", () -> AutoScroll.installNative(loader));
@@ -184,7 +185,7 @@ final class Module {
         for (String name : new String[]{"com.bytedance.lobby.google.GoogleAuth", "com.bytedance.lobby.google.GoogleOneTapAuth"}) {
             Class<?> type = Hooks.findClass(name, loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 if (method.getParameterTypes().length == 0 && method.getReturnType() == boolean.class
                         && Modifier.isFinal(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
                     Hooks.hook(method, Hooks.constant(false));

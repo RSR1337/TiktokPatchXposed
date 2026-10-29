@@ -29,7 +29,7 @@ final class PhotoQuality {
         for (String hit : Discovery.methodsUsing(CONVERTER)) {
             Class<?> owner = Hooks.findClass(hit.split("#", 2)[0], loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!Modifier.isStatic(method.getModifiers()) || p.length == 0 || p[0] != info) continue;
                 Hooks.hook(method, new Hooks.Hook() {

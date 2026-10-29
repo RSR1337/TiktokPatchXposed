@@ -63,7 +63,7 @@ final class RegionSpoof {
         features.put("f_global_timezone", Math.max(-12, Math.min(12, raw / 3_600_000)));
         int hooks = 0;
         // Request parameters read them as text ("10800"), other code as numbers.
-        for (Method method : producer.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(producer)) {
             boolean numeric = method.getName().startsWith("getNumericFeature") && method.getReturnType() == Number.class;
             boolean text = method.getName().startsWith("getStringFeature") && method.getReturnType() == String.class;
             if (!numeric && !text) continue;
@@ -100,7 +100,7 @@ final class RegionSpoof {
         values.put("getNetworkType", TelephonyManager.NETWORK_TYPE_LTE);
         values.put("getDataNetworkType", TelephonyManager.NETWORK_TYPE_LTE);
         values.put("getVoiceNetworkType", TelephonyManager.NETWORK_TYPE_LTE);
-        for (Method method : TelephonyManager.class.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(TelephonyManager.class)) {
             Object value = values.get(method.getName());
             if (value == null || !compatible(method.getReturnType(), value)) continue;
             Hooks.hook(method, constant(value));
@@ -110,7 +110,7 @@ final class RegionSpoof {
     private static void hookSubscriptionInfo(Regions.Region selected) {
         Class<?> type = Hooks.findClass("android.telephony.SubscriptionInfo", null);
         if (type == null) return;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             if (method.getParameterTypes().length != 0) continue;
             Object value;
             switch (method.getName()) {
@@ -184,7 +184,7 @@ final class RegionSpoof {
         features.put("f_global_carrier_region_v2", selected.mcc());
         features.put("f_global_mcc_mnc", selected.operator);
         int hooks = 0;
-        for (Method method : producer.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(producer)) {
             if (!method.getName().startsWith("getStringFeature") || method.getReturnType() != String.class) continue;
             int nameIndex = -1;
             Class<?>[] p = method.getParameterTypes();

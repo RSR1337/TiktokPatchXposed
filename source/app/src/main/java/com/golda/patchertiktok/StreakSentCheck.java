@@ -63,7 +63,7 @@ final class StreakSentCheck {
         Object service = StreakApi.service(loader, CORE_SERVICE);
         // Several service methods take the business; the IM client is the one with the message store.
         for (Object client : socialObjects(service)) {
-            for (Method getter : client.getClass().getMethods()) {
+            for (Method getter : Reflect.publicMethods(client.getClass())) {
                 if (getter.getParameterTypes().length != 0 || Modifier.isStatic(getter.getModifiers())) continue;
                 Method candidate = senderSince(getter.getReturnType(), wanted);
                 if (candidate == null) continue;
@@ -82,7 +82,7 @@ final class StreakSentCheck {
     /** What the service hands out for TikTok's social inbox (TIKTOK_SOCIAL_IM), one per method that takes it. */
     static List<Object> socialObjects(Object service) throws ReflectiveOperationException {
         List<Object> found = new ArrayList<>();
-        for (Method method : service.getClass().getMethods()) {
+        for (Method method : Reflect.publicMethods(service.getClass())) {
             Class<?>[] p = method.getParameterTypes();
             if (p.length != 1 || !p[0].isEnum() || method.getReturnType().isPrimitive()) continue;
             for (Object constant : p[0].getEnumConstants()) {
@@ -112,7 +112,7 @@ final class StreakSentCheck {
     /** (conversation, after-millis, sender) -> List on {@code type}, preferring the one TikTok's check calls. */
     private static Method senderSince(Class<?> type, List<String> wanted) {
         List<Method> shaped = new ArrayList<>();
-        for (Method method : type.getMethods()) {
+        for (Method method : Reflect.publicMethods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (p.length == 3 && p[0] == String.class && p[1] == long.class && p[2] == String.class
                     && List.class.isAssignableFrom(method.getReturnType())) shaped.add(method);

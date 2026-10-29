@@ -42,7 +42,7 @@ final class ExactCounts {
         for (String name : CALLERS) {
             Class<?> owner = Hooks.findClass(name, loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 for (String call : Discovery.invokedBy(owner.getName(), method.getName())) {
                     for (Method candidate : resolve(loader, call)) {
                         if (isShortener(candidate) && callsCompactFormatter(loader, candidate)) shorteners.add(candidate);
@@ -68,7 +68,7 @@ final class ExactCounts {
         for (String name : PROFILE_CALLERS) {
             Class<?> owner = Hooks.findClass(name, loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 for (String call : Discovery.invokedBy(owner.getName(), method.getName())) {
                     for (Method candidate : resolve(loader, call)) {
                         Class<?>[] p = candidate.getParameterTypes();
@@ -116,7 +116,7 @@ final class ExactCounts {
         if (parts.length != 2 || parts[1].startsWith("<")) return found;
         Class<?> type = Hooks.findClass(parts[0], loader);
         if (type == null || type.getName().startsWith("java.") || type.getName().startsWith("android.")) return found;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) found.add(method);
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) found.add(method);
         return found;
     }
 

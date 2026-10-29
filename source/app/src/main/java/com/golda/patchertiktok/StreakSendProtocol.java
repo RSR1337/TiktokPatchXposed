@@ -11,7 +11,7 @@ final class StreakSendProtocol {
 
     static Method sendMethod(Class<?> type) throws NoSuchMethodException {
         Method match = null;
-        for (Method method : type.getMethods()) {
+        for (Method method : Reflect.publicMethods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class
                     || p.length != 11 || p[0] != String.class || p[1] != String.class
@@ -34,7 +34,7 @@ final class StreakSendProtocol {
         Class<?> message = null;
         boolean failure = false;
         boolean batch = false;
-        for (Method method : callback.getMethods()) {
+        for (Method method : Reflect.publicMethods(callback)) {
             if (method.getDeclaringClass() == Object.class || Modifier.isStatic(method.getModifiers())) continue;
             if (method.getReturnType() != void.class) throw new NoSuchMethodException("Unexpected callback result");
             Class<?>[] p = method.getParameterTypes();

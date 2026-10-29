@@ -102,7 +102,7 @@ public final class DownloadsPlus {
             if (separator <= 0) continue;
             Class<?> owner = Hooks.findClass(entry.substring(0, separator), loader);
             if (owner == null || modelField(owner, aweme) == null || !hasActivity(owner)) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (!method.getName().equals(entry.substring(separator + 1)) || method.getReturnType() != void.class
                         || Modifier.isAbstract(method.getModifiers()) || Modifier.isStatic(method.getModifiers())) continue;
                 Class<?>[] args = method.getParameterTypes();
@@ -318,7 +318,7 @@ public final class DownloadsPlus {
     private static Field modelField(Class<?> owner, Class<?> aweme) {
         Field found = null;
         for (Class<?> type = owner; type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (Modifier.isStatic(field.getModifiers()) || field.getType() != aweme) continue;
                 if (found != null) return null;
                 field.setAccessible(true);
@@ -330,7 +330,7 @@ public final class DownloadsPlus {
 
     private static boolean hasActivity(Class<?> owner) {
         for (Class<?> type = owner; type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (!Modifier.isStatic(field.getModifiers()) && Activity.class.isAssignableFrom(field.getType())) return true;
             }
         }
@@ -339,7 +339,7 @@ public final class DownloadsPlus {
 
     private static Activity ownerActivity(Object owner) throws IllegalAccessException {
         for (Class<?> type = owner.getClass(); type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (Modifier.isStatic(field.getModifiers()) || !Activity.class.isAssignableFrom(field.getType())) continue;
                 field.setAccessible(true);
                 Activity value = (Activity) field.get(owner);

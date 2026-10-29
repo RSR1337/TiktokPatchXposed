@@ -82,7 +82,7 @@ final class Overlay {
                 }
             }
         });
-        for (Constructor<?> constructor : layer.getDeclaredConstructors()) {
+        for (Constructor<?> constructor : Reflect.constructors(layer)) {
             Hooks.hook(constructor, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     View view = (View) param.thisObject;
@@ -120,7 +120,7 @@ final class Overlay {
                 methods.add(type.getMethod("onViewCreated", View.class));
                 kinds.put(type, entry[1]);
                 sides |= !"tako".equals(entry[1]);
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException | LinkageError ignored) {
                 // Not a component in this version.
             }
         }
@@ -181,7 +181,7 @@ final class Overlay {
         if (type == null) return null;
         try {
             return type.getDeclaredMethod(name, parameters);
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             return null;
         }
     }

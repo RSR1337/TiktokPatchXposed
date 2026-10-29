@@ -47,7 +47,7 @@ final class ChatMenu {
             RuntimeLog.log("chat menu unavailable: classes not found");
             return;
         }
-        for (Method method : slot.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(slot)) {
             if (method.getParameterTypes().length == 0 && method.getReturnType() == template && !Modifier.isStatic(method.getModifiers())) {
                 if (templateGetter != null) {
                     RuntimeLog.log("chat menu unavailable: sticker getter ambiguous");
@@ -70,7 +70,7 @@ final class ChatMenu {
             }
         };
         int binds = 0;
-        for (Method method : slot.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(slot)) {
             if (method.getParameterTypes().length == 1 && method.getReturnType() == void.class
                     && !Modifier.isStatic(method.getModifiers()) && !Modifier.isAbstract(method.getModifiers())
                     && !View.class.isAssignableFrom(method.getParameterTypes()[0])) {
@@ -79,7 +79,7 @@ final class ChatMenu {
             }
         }
         int menus = 0;
-        for (Method method : press.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(press)) {
             if (method.getParameterTypes().length != 1 || method.getReturnType() != void.class || method.isBridge()) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -97,7 +97,7 @@ final class ChatMenu {
         View bubble = null;
         List<?> actions = null;
         String chat = null;
-        for (Field field : payload.getClass().getDeclaredFields()) {
+        for (Field field : Reflect.fields(payload.getClass())) {
             try {
                 field.setAccessible(true);
                 Object value = field.get(payload);

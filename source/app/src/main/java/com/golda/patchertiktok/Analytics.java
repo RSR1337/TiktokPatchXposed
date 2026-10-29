@@ -109,7 +109,7 @@ final class Analytics {
         if (priority != null && response != null) {
             try {
                 java.lang.reflect.Constructor<?> accepted = response.getConstructor(int.class, String.class, String.class);
-                for (Method method : priority.getDeclaredMethods()) {
+                for (Method method : Reflect.methods(priority)) {
                     if (!method.getName().equals("doHttpPost") || method.getReturnType() != response) continue;
                     Hooks.hook(method, new Hooks.Hook() {
                         @Override protected void before(Hooks.Call param) {
@@ -123,7 +123,7 @@ final class Analytics {
                     });
                     hooks++;
                 }
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException | LinkageError ignored) {
                 // No priority channel in this version.
             }
         }
@@ -135,7 +135,7 @@ final class Analytics {
         String[] parts = hit.split("#", 2);
         Class<?> type = Hooks.findClass(parts[0], loader);
         if (type == null) return found;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             if (method.getName().equals(parts[1]) && !Modifier.isAbstract(method.getModifiers())) found.add(method);
         }
         return found;

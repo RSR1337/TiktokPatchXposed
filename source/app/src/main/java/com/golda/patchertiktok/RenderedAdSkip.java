@@ -27,7 +27,7 @@ final class RenderedAdSkip {
         if (current == null) return;
         current.setAccessible(true);
         int hooks = 0;
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -44,12 +44,12 @@ final class RenderedAdSkip {
     }
 
     static Method currentAweme(Class<?> panel) {
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if ("getCurrentAweme".equals(method.getName()) && method.getParameterTypes().length == 0
                     && AWEME.equals(method.getReturnType().getName())) return method;
         }
         // Obfuscated builds expose the pager's current item through final aliases of one getter.
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (method.getParameterTypes().length == 0 && AWEME.equals(method.getReturnType().getName())
                     && Modifier.isPublic(method.getModifiers()) && Modifier.isFinal(method.getModifiers())) {
                 return method;

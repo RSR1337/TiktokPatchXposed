@@ -66,7 +66,7 @@ final class AutoScroll {
         }
         currentAweme = RenderedAdSkip.currentAweme(panelType);
         recommendPanel = Hooks.findClass(RECOMMEND, loader);
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (method.getParameterTypes().length != 0) continue;
             String type = method.getReturnType().getName();
             if (playerAbility == null && ABILITY.equals(type)) playerAbility = method;
@@ -79,7 +79,7 @@ final class AutoScroll {
         currentAweme.setAccessible(true);
         playerAbility.setAccessible(true);
         pager.setAccessible(true);
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -130,7 +130,7 @@ final class AutoScroll {
     private static Method own(Class<?> type, String hit) {
         String[] parts = hit.split("#", 2);
         if (parts.length != 2 || !parts[0].equals(type.getName())) return null;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) return method;
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) return method;
         return null;
     }
 

@@ -274,7 +274,7 @@ final class FeedFilter {
         for (String owner : owners) {
             Class<?> type = Hooks.findClass(owner, loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length != 4 || p[0] != int.class || p[1] != String.class || p[2] != List.class
                         || !"kotlin.jvm.functions.Function0".equals(p[3].getName())
@@ -312,7 +312,7 @@ final class FeedFilter {
                     @Override protected void before(Hooks.Call param) throws IllegalAccessException {
                         Object payload = param.args[0];
                         if (payload == null) return;
-                        for (java.lang.reflect.Field field : payload.getClass().getDeclaredFields()) {
+                        for (java.lang.reflect.Field field : Reflect.fields(payload.getClass())) {
                             if (field.getType() != List.class || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
                             field.setAccessible(true);
                             Object value = field.get(payload);
@@ -353,7 +353,7 @@ final class FeedFilter {
         List<Method> found = new ArrayList<>();
         String[] parts = hit.split("#", 2);
         if (parts.length != 2 || !parts[0].equals(type.getName())) return found;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) found.add(method);
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) found.add(method);
         return found;
     }
 

@@ -35,7 +35,7 @@ final class StoryDownload {
         }
         Touch.install();
         int hooks = 0;
-        for (Method method : monitor.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(monitor)) {
             int modifiers = method.getModifiers();
             if (method.getParameterTypes().length != 0 || method.getReturnType() != void.class
                     || Modifier.isStatic(modifiers) || !Modifier.isPublic(modifiers) || method.getName().startsWith("on")) continue;
@@ -66,7 +66,7 @@ final class StoryDownload {
         Object proxy = Reflect.get(component, "cellProxy");
         if (proxy == null) return null;
         for (Class<?> type = proxy.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (Modifier.isStatic(field.getModifiers())) continue;
                 try {
                     field.setAccessible(true);
