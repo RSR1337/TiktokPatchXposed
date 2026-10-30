@@ -66,7 +66,7 @@ final class AutoScroll {
         }
         currentAweme = RenderedAdSkip.currentAweme(panelType);
         recommendPanel = Hooks.findClass(RECOMMEND, loader);
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (method.getParameterTypes().length != 0) continue;
             String type = method.getReturnType().getName();
             if (playerAbility == null && ABILITY.equals(type)) playerAbility = method;
@@ -79,7 +79,7 @@ final class AutoScroll {
         currentAweme.setAccessible(true);
         playerAbility.setAccessible(true);
         pager.setAccessible(true);
-        for (Method method : panelType.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panelType)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -130,7 +130,7 @@ final class AutoScroll {
     private static Method own(Class<?> type, String hit) {
         String[] parts = hit.split("#", 2);
         if (parts.length != 2 || !parts[0].equals(type.getName())) return null;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) return method;
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) return method;
         return null;
     }
 
@@ -167,6 +167,15 @@ final class AutoScroll {
                     private int frames;
 
                     @Override public boolean onPreDraw() {
+                        try {
+                            return guardedPreDraw();
+                        } catch (Throwable error) {
+                            Safe.log("auto-scroll switch", error);
+                            return true;
+                        }
+                    }
+
+                    private boolean guardedPreDraw() {
                         View list = shallowestList(decor);
                         boolean ready = list != null && list.getWidth() > 0;
                         if (!ready && ++frames < 30) return true;
@@ -266,13 +275,13 @@ final class AutoScroll {
         String key = shownPanel == null ? Prefs.AUTO_SCROLL : key(shownPanel);
         toggle.setChecked(Prefs.on(key), false);
         line.addView(toggle);
-        line.setOnClickListener(view -> {
+        line.setOnClickListener(Safe.click("auto-scroll switch", view -> {
             boolean on = !Prefs.on(key);
             Prefs.set(key, on);
             toggle.setChecked(on, true);
             Object current = panel.get();
             if (on && current != null) started(current);
-        });
+        }));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.setMargins(Math.round(12 * density), Math.round(8 * density), Math.round(12 * density), 0);
         line.setAlpha(0f);
@@ -282,6 +291,15 @@ final class AutoScroll {
         // cards, its color and its corners. Then the switch reads as one more of its cards.
         observer.addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
             @Override public boolean onPreDraw() {
+                try {
+                    return guardedPreDraw();
+                } catch (Throwable error) {
+                    Safe.log("auto-scroll switch", error);
+                    return true;
+                }
+            }
+
+            private boolean guardedPreDraw() {
                 if (line.getWidth() == 0) return true;
                 remove(line, observer, this);
                 line.setAlpha(1f);
@@ -411,6 +429,14 @@ final class AutoScroll {
 
     private static final Runnable TICK = new Runnable() {
         @Override public void run() {
+            try {
+                step();
+            } catch (Throwable error) {
+                Safe.log("auto-scroll", error);
+            }
+        }
+
+        private void step() {
             Object feedPanel = panel.get();
             String id = playing;
             if (feedPanel == null || id == null || !Prefs.on(key(feedPanel))) return;

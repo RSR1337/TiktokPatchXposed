@@ -12,9 +12,12 @@ import java.util.Locale;
 
 /**
  * LSPosed drops module lines after the first dozen of a process, so every line also goes to
- * TikTok's cache/patcher.log (rewritten on each launch, capped at 256 KB).
+ * TikTok's cache/patcher.log (rewritten on each launch, capped at 256 KB). The previous launch's
+ * log is kept as patcher-prev.log, so a crash is still there after TikTok restarts.
  */
 final class RuntimeLog {
+    static final String FILE = "patcher.log";
+    static final String PREVIOUS = "patcher-prev.log";
     private static final long LIMIT = 256 * 1024;
     private static final List<String> EARLY = new ArrayList<>();
     private static final SimpleDateFormat TIME = new SimpleDateFormat("HH:mm:ss.SSS", Locale.US);
@@ -32,7 +35,9 @@ final class RuntimeLog {
     static synchronized void attach(Context context) {
         if (file != null) return;
         try {
-            File target = new File(context.getCacheDir(), "patcher.log");
+            File target = new File(context.getCacheDir(), FILE);
+            File previous = new File(context.getCacheDir(), PREVIOUS);
+            if (target.isFile() && (!previous.exists() || previous.delete())) target.renameTo(previous);
             try (FileWriter out = new FileWriter(target, false)) {
                 for (String line : EARLY) out.write(line);
             }

@@ -46,5 +46,21 @@ final class FeatureStatus {
 
     static String problem(String feature) { return PROBLEMS.get(feature); }
 
+    /** The module's own package, from the class name: getPackage() is null under LSPosed's class loaders. */
+    private static final String MODULE = FeatureStatus.class.getName().substring(0, FeatureStatus.class.getName().lastIndexOf('.') + 1);
+
+    /** An install error for the status screen: its type, message and where in the module it came from. */
+    static String describe(Throwable error) {
+        StringBuilder text = new StringBuilder(error.getClass().getSimpleName());
+        if (error.getMessage() != null) text.append(": ").append(error.getMessage());
+        for (StackTraceElement frame : error.getStackTrace()) {
+            if (!frame.getClassName().startsWith(MODULE)) continue;
+            String file = frame.getFileName();
+            text.append(" (").append(file != null ? file : frame.getClassName()).append(':').append(frame.getLineNumber()).append(')');
+            break;
+        }
+        return text.length() > 160 ? text.substring(0, 157) + "…" : text.toString();
+    }
+
     static int problems() { return PROBLEMS.size(); }
 }

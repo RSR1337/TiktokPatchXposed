@@ -41,7 +41,7 @@ final class ExactTime {
         int scopes = 0;
         Class<?> cell = Hooks.findClass(CELL, loader);
         if (cell != null) {
-            for (Method method : cell.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(cell)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length != 2 || p[0] != int.class || p[1] != boolean.class || method.getReturnType() != void.class) continue;
                 List<String> calls = Discovery.invokedBy(cell.getName(), method.getName());
@@ -53,7 +53,7 @@ final class ExactTime {
         for (String name : REPOSTS) {
             Class<?> owner = Hooks.findClass(name, loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (Modifier.isAbstract(method.getModifiers())) continue;
                 Set<Method> found = dateHelpers(loader, Discovery.invokedBy(owner.getName(), method.getName()));
                 if (found.isEmpty()) continue;
@@ -62,7 +62,7 @@ final class ExactTime {
             }
         }
         for (Method helper : helpers) {
-            Hooks.hook(helper, new Hooks.Hook() {
+            Hooks.tryHook(helper, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     if (SCOPE.get()[0] == 0 || !Prefs.on(Prefs.EXACT_TIME) || !(param.args[0] instanceof Long)) return;
                     long millis = (Long) param.args[0];
@@ -82,7 +82,7 @@ final class ExactTime {
             if (parts.length != 2 || parts[1].startsWith("<")) continue;
             Class<?> type = Hooks.findClass(parts[0], loader);
             if (type == null || type.getName().startsWith("java.") || type.getName().startsWith("android.")) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!method.getName().equals(parts[1]) || !Modifier.isStatic(method.getModifiers())
                         || method.getReturnType() != String.class || p.length == 0 || p[0] != long.class) continue;
@@ -93,11 +93,10 @@ final class ExactTime {
     }
 
     private static int scope(Method method) {
-        Hooks.hook(method, new Hooks.Hook() {
+        return Hooks.tryHook(method, new Hooks.Hook() {
             @Override protected void before(Hooks.Call param) { SCOPE.get()[0]++; }
             @Override protected void after(Hooks.Call param) { SCOPE.get()[0]--; }
-        });
-        return 1;
+        }) ? 1 : 0;
     }
 
     /** Feed and story header: the state builder and its "· " + date helper. */
@@ -107,7 +106,7 @@ final class ExactTime {
         if (vm == null || item == null) return 0;
         Method prefix = null;
         int prefixes = 0;
-        for (Method method : vm.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(vm)) {
             Class<?>[] p = method.getParameterTypes();
             if (Modifier.isStatic(method.getModifiers()) && method.getReturnType() == String.class && p.length == 1 && p[0] == String.class) {
                 prefix = method;
@@ -116,10 +115,10 @@ final class ExactTime {
         }
         if (prefixes != 1) return 0;
         int hooks = 0;
-        for (Method method : vm.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(vm)) {
             Class<?>[] p = method.getParameterTypes();
             if (!method.getName().equals("paramSync2StateAccept") || p.length != 2 || p[1] != item) continue;
-            Hooks.hook(method, new Hooks.Hook() {
+            Hooks.tryHook(method, new Hooks.Hook() {
                 @Override protected void before(Hooks.Call param) {
                     Object seconds = Reflect.call(Reflect.call(param.args[1], "getAweme"), "getCreateTime");
                     POST.get()[0] = seconds instanceof Long ? (Long) seconds : 0;
@@ -129,7 +128,7 @@ final class ExactTime {
             hooks++;
         }
         if (hooks == 0) return 0;
-        Hooks.hook(prefix, new Hooks.Hook() {
+        Hooks.tryHook(prefix, new Hooks.Hook() {
             @Override protected void after(Hooks.Call param) {
                 long seconds = POST.get()[0];
                 Object shown = param.getResult();

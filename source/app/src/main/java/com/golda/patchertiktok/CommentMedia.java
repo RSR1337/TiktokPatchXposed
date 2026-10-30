@@ -63,6 +63,15 @@ final class CommentMedia {
                     private int frames;
 
                     @Override public boolean onPreDraw() {
+                        try {
+                            return guardedPreDraw();
+                        } catch (Throwable error) {
+                            Safe.log("comment media", error);
+                            return true;
+                        }
+                    }
+
+                    private boolean guardedPreDraw() {
                         LinearLayout block = sendBlock(decor);
                         if (block == null && ++frames < 30) return true;
                         ViewTreeObserver live = observer.isAlive() ? observer : decor.getViewTreeObserver();
@@ -133,7 +142,7 @@ final class CommentMedia {
             for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
                 String name = type.getName();
                 if (name.startsWith("android.") || name.startsWith("java.")) break;
-                for (Field field : type.getDeclaredFields()) {
+                for (Field field : Reflect.fields(type)) {
                     Class<?> kind = field.getType();
                     if (Modifier.isStatic(field.getModifiers()) || kind.isPrimitive() || kind == String.class
                             || View.class.isAssignableFrom(kind) || Drawable.class.isAssignableFrom(kind)
@@ -227,7 +236,7 @@ final class CommentMedia {
             title.setTextSize(15);
         }
         row.addView(title, new LinearLayout.LayoutParams(0, -2, 1f));
-        row.setOnClickListener(view -> {
+        row.setOnClickListener(Safe.click("comment media", view -> {
             Object id = Reflect.call(comment, "getCid");
             DownloadsPlus.save(dialog.getContext(), "comment_" + id, media);
             try {
@@ -235,7 +244,7 @@ final class CommentMedia {
             } catch (RuntimeException ignored) {
                 // Already closing.
             }
-        });
+        }));
 
         alignTo(row, icon, iconParams, sample, sampleRow);
         int height = sampleRow != null && sampleRow.getHeight() > 0 ? sampleRow.getHeight() : Math.round(52 * density);

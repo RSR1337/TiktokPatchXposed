@@ -65,7 +65,7 @@ final class RefreshRate {
         java.lang.reflect.Method method;
         try {
             method = type.getMethod("setAttributes", WindowManager.LayoutParams.class);
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             return;
         }
         if (!HOOKED.add(method.getDeclaringClass())) return;

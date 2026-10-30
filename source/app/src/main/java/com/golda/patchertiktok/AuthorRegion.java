@@ -38,20 +38,22 @@ final class AuthorRegion {
     private AuthorRegion() { }
 
     static void install(ClassLoader loader) {
+        // Profiles first: they also carry the account date, which does not need the feed panel.
+        installProfile(loader);
         Class<?> panel = Hooks.findClass(PANEL, loader);
         if (panel == null || (currentAweme = RenderedAdSkip.currentAweme(panel)) == null) {
             RuntimeLog.log("author region unavailable: feed panel not found");
             return;
         }
         currentAweme.setAccessible(true);
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (method.getParameterCount() == 0 && PAGER.equals(method.getReturnType().getName())) {
                 method.setAccessible(true);
                 pager = method;
             }
         }
         int hooks = 0;
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (!"onRenderFirstFrame".equals(method.getName()) || method.getReturnType() != void.class) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
@@ -60,7 +62,10 @@ final class AuthorRegion {
             });
             hooks++;
         }
-        installProfile(loader);
+    }
+
+    private static boolean profileWanted() {
+        return Prefs.on(Prefs.AUTHOR_REGION) || Prefs.on(Prefs.ACCOUNT_DATE);
     }
 
     private static int id(View view) {
@@ -87,10 +92,18 @@ final class AuthorRegion {
                 @Override public void onTextChanged(CharSequence text, int start, int before, int count) { }
 
                 @Override public void afterTextChanged(android.text.Editable text) {
+                    try {
+                        guardedAfterTextChanged(text);
+                    } catch (Throwable error) {
+                        Safe.log("author region", error);
+                    }
+                }
+
+                private void guardedAfterTextChanged(android.text.Editable text) {
                     // Our own write is not news.
                     if (label.getText().toString().equals(Hooks.getExtra(label, WRITTEN))) return;
                     if (Hooks.getExtra(label, OWNER) == null) Hooks.setExtra(label, FLAG, null);
-                    label.post(() -> refresh(label));
+                    label.post(Safe.run("author region", () -> refresh(label)));
                 }
             });
         }
@@ -118,7 +131,7 @@ final class AuthorRegion {
         Class<?> component = Hooks.findClass(ACCOUNT_NAME, loader);
         Method label = null;
         if (component != null) {
-            for (Method method : component.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(component)) {
                 if (method.getParameterCount() == 0 && TextView.class.isAssignableFrom(method.getReturnType())) {
                     if (label != null) {
                         label = null;
@@ -135,7 +148,7 @@ final class AuthorRegion {
         label.setAccessible(true);
         Method nameView = label;
         // The profile's user arrives through the view model; any method handing it a User counts.
-        for (Method method : model.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(model)) {
             int index = -1;
             Class<?>[] types = method.getParameterTypes();
             for (int i = 0; i < types.length; i++) if (types[i] == user) index = i;
@@ -144,21 +157,21 @@ final class AuthorRegion {
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     Object value = param.args[position];
-                    if (value == null || !Prefs.on(Prefs.AUTHOR_REGION)) return;
+                    if (value == null || !profileWanted()) return;
                     profileUser = new java.lang.ref.WeakReference<>(value);
                     // The header can bind before or after the user arrives; look again shortly.
-                    MAIN.post(AuthorRegion::markProfile);
-                    MAIN.postDelayed(AuthorRegion::markProfile, 400);
-                    MAIN.postDelayed(AuthorRegion::markProfile, 1_200);
+                    MAIN.post(Safe.run("author region", AuthorRegion::markProfile));
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 400);
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 1_200);
                 }
             });
         }
         // The name line binds after the data; mark it whenever the component refreshes.
-        for (Method method : component.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(component)) {
             if (method.getReturnType() != void.class || Modifier.isStatic(method.getModifiers())) continue;
             Hooks.hook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
-                    if (!Prefs.on(Prefs.AUTHOR_REGION)) return;
+                    if (!profileWanted()) return;
                     try {
                         Object view = nameView.invoke(param.thisObject);
                         if (view instanceof TextView) accountName = new java.lang.ref.WeakReference<>((TextView) view);
@@ -166,7 +179,7 @@ final class AuthorRegion {
                         return;
                     }
                     markProfile();
-                    MAIN.postDelayed(AuthorRegion::markProfile, 300);
+                    MAIN.postDelayed(Safe.run("author region", AuthorRegion::markProfile), 300);
                 }
             });
         }
@@ -181,14 +194,16 @@ final class AuthorRegion {
         Object nickname = Reflect.call(user, "getNickname");
         String region = userRegion(user);
         remember(handle, region);
-        String flag = RegionFlag.of(region);
         CharSequence text = name.getText();
-        if (flag == null || text == null || text.length() == 0) return;
+        if (text == null || text.length() == 0) return;
         String shown = text.toString();
         String owner = null;
         if (handle instanceof String && !((String) handle).isEmpty() && shown.contains((String) handle)) owner = (String) handle;
         else if (nickname instanceof String && !((String) nickname).isEmpty() && shown.contains((String) nickname)) owner = (String) nickname;
-        if (owner != null) pin(name, flag, owner);
+        if (owner == null) return;
+        AccountDate.show(name, user);
+        String flag = Prefs.on(Prefs.AUTHOR_REGION) ? RegionFlag.of(region) : null;
+        if (flag != null) pin(name, flag, owner);
     }
 
     private static String userRegion(Object user) {
@@ -226,7 +241,7 @@ final class AuthorRegion {
         };
         // Now if the label is already bound, and once more after the pending layout pass.
         if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) mark.run();
-        root.post(mark);
+        root.post(Safe.run("author region", mark));
     }
 
     private static String region(Object aweme) {

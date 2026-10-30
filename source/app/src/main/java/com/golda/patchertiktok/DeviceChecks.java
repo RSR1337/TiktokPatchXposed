@@ -69,7 +69,7 @@ final class DeviceChecks {
         Class<?> service = Hooks.findClass(PASSKEY, loader);
         if (service == null) return 0;
         int hooks = 0;
-        for (Method method : service.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(service)) {
             if (method.getReturnType() != boolean.class || method.getParameterCount() != 0
                     || !Discovery.invokedBy(service.getName(), method.getName()).contains(GMS)) continue;
             Hooks.hook(method, answer(Prefs.HIDE_PASSKEY, false));
@@ -82,7 +82,7 @@ final class DeviceChecks {
         Class<?> har = Hooks.findClass(HAR, loader);
         if (har == null) return 0;
         int hooks = 0;
-        for (Method method : har.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(har)) {
             if (method.getParameterCount() != 0) continue;
             if (method.getName().equals("enable") && method.getReturnType() == boolean.class) {
                 Hooks.hook(method, answer(Prefs.NO_MOTION_SENSORS, false));
@@ -109,7 +109,7 @@ final class DeviceChecks {
             String[] parts = hit.split("#", 2);
             Class<?> type = Hooks.findClass(parts[0], loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) found.add(method);
+            for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) found.add(method);
         }
         return found;
     }

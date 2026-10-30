@@ -82,7 +82,7 @@ final class Overlay {
                 }
             }
         });
-        for (Constructor<?> constructor : layer.getDeclaredConstructors()) {
+        for (Constructor<?> constructor : Reflect.constructors(layer)) {
             Hooks.hook(constructor, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     View view = (View) param.thisObject;
@@ -90,17 +90,17 @@ final class Overlay {
                         LAYERS.removeIf(ref -> ref.get() == null);
                         LAYERS.add(new WeakReference<>(view));
                     }
-                    view.post(() -> apply(view));
-                    view.getViewTreeObserver().addOnGlobalLayoutListener(() -> hideParts(view));
+                    view.post(Safe.run("overlay", () -> apply(view)));
+                    view.getViewTreeObserver().addOnGlobalLayoutListener(() -> Safe.run("overlay", () -> hideParts(view)).run());
                 }
             });
         }
         installParts(loader);
         schedule();
-        Prefs.listen(() -> MAIN.post(() -> {
+        Prefs.listen(() -> MAIN.post(Safe.run("overlay", () -> {
             refresh();
             schedule();
-        }));
+        })));
         RuntimeLog.log("overlay installed");
     }
 
@@ -120,7 +120,7 @@ final class Overlay {
                 methods.add(type.getMethod("onViewCreated", View.class));
                 kinds.put(type, entry[1]);
                 sides |= !"tako".equals(entry[1]);
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException | LinkageError ignored) {
                 // Not a component in this version.
             }
         }
@@ -140,7 +140,7 @@ final class Overlay {
                 }
                 if (kind == null) return;
                 View view = (View) param.args[0];
-                if (PARTS.put(view, kind) == null) view.getViewTreeObserver().addOnPreDrawListener(() -> !enforce(view));
+                if (PARTS.put(view, kind) == null) view.getViewTreeObserver().addOnPreDrawListener(Safe.preDraw("overlay", () -> !enforce(view)));
                 enforce(view);
             }
         };
@@ -181,14 +181,14 @@ final class Overlay {
         if (type == null) return null;
         try {
             return type.getDeclaredMethod(name, parameters);
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             return null;
         }
     }
 
     /** Settings are read after the hooks go in; the watcher starts once they are known. */
     static void settingsLoaded() {
-        MAIN.post(Overlay::schedule);
+        MAIN.post(Safe.run("overlay", Overlay::schedule));
     }
 
     /** The burn-in watcher runs only while the protection is on. */
@@ -327,6 +327,14 @@ final class Overlay {
         private long shifted = SystemClock.uptimeMillis();
 
         @Override public void run() {
+            try {
+                step();
+            } catch (Throwable error) {
+                Safe.log("burn-in protection", error);
+            }
+        }
+
+        private void step() {
             if (!Prefs.on(Prefs.BURN_IN)) return;
             long now = SystemClock.uptimeMillis();
             if (!dimmed && dims() && now - lastTouch > IDLE_MS) {

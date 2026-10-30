@@ -1,5 +1,6 @@
 package com.golda.patchertiktok;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -28,6 +29,105 @@ final class Reflect {
             METHODS.put(key, cached);
         }
         return cached == MISSING ? null : (Method) cached;
+    }
+
+    /**
+     * The class's declared methods whose signatures load. On some builds a method names a class
+     * that fails to resolve, and its getParameterTypes() throws NoClassDefFoundError (#12); one
+     * such method must not hide the others.
+     */
+    static Method[] methods(Class<?> type) {
+        try {
+            return usable(type, type.getDeclaredMethods());
+        } catch (Throwable error) {
+            skipped(type, -1, error);
+            return new Method[0];
+        }
+    }
+
+    /** Public methods, own and inherited, whose signatures load; see {@link #methods}. */
+    static Method[] publicMethods(Class<?> type) {
+        try {
+            return usable(type, type.getMethods());
+        } catch (Throwable error) {
+            skipped(type, -1, error);
+            return new Method[0];
+        }
+    }
+
+    /** Declared fields whose types load; see {@link #methods}. */
+    static Field[] fields(Class<?> type) {
+        Field[] all;
+        try {
+            all = type.getDeclaredFields();
+        } catch (Throwable error) {
+            skipped(type, -1, error);
+            return new Field[0];
+        }
+        java.util.ArrayList<Field> usable = new java.util.ArrayList<>(all.length);
+        Throwable first = null;
+        for (Field field : all) {
+            try {
+                field.getType();
+                usable.add(field);
+            } catch (Throwable error) {
+                if (first == null) first = error;
+            }
+        }
+        if (first != null) skipped(type, all.length - usable.size(), first);
+        return first == null ? all : usable.toArray(new Field[0]);
+    }
+
+    /** Declared constructors whose parameters load; see {@link #methods}. */
+    static Constructor<?>[] constructors(Class<?> type) {
+        Constructor<?>[] all;
+        try {
+            all = type.getDeclaredConstructors();
+        } catch (Throwable error) {
+            skipped(type, -1, error);
+            return new Constructor<?>[0];
+        }
+        java.util.ArrayList<Constructor<?>> usable = new java.util.ArrayList<>(all.length);
+        Throwable first = null;
+        for (Constructor<?> constructor : all) {
+            try {
+                constructor.getParameterTypes();
+                usable.add(constructor);
+            } catch (Throwable error) {
+                if (first == null) first = error;
+            }
+        }
+        if (first != null) skipped(type, all.length - usable.size(), first);
+        return first == null ? all : usable.toArray(new Constructor<?>[0]);
+    }
+
+    private static Method[] usable(Class<?> type, Method[] all) {
+        java.util.ArrayList<Method> usable = new java.util.ArrayList<>(all.length);
+        Throwable first = null;
+        for (Method method : all) {
+            try {
+                method.getParameterTypes();
+                method.getReturnType();
+                usable.add(method);
+            } catch (Throwable error) {
+                if (first == null) first = error;
+            }
+        }
+        if (first != null) skipped(type, all.length - usable.size(), first);
+        return first == null ? all : usable.toArray(new Method[0]);
+    }
+
+    /** Classes already noted in the log; a class is scanned many times, the line is written once. */
+    private static final java.util.Set<String> NOTED = java.util.Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    /** Notes members skipped on this device (count -1: the whole class), so bug reports show it. */
+    private static void skipped(Class<?> type, int count, Throwable error) {
+        String name = type == null ? "?" : type.getName();
+        if (!NOTED.add(name) || NOTED.size() > 50) return;
+        try {
+            RuntimeLog.log("reflect: skipped " + (count < 0 ? "all members" : count + " member(s)") + " of " + name
+                    + ": " + error.getClass().getSimpleName() + ": " + error.getMessage());
+        } catch (Throwable ignored) { }
     }
 
     static Field field(Class<?> type, String name) {

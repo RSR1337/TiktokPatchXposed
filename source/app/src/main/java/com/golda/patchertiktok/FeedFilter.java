@@ -52,7 +52,7 @@ final class FeedFilter {
         Hooks.hookAll(feed, "setItems", new Hooks.Hook() {
             @Override protected void before(Hooks.Call param) {
                 if (param.args.length == 0 || !(param.args[0] instanceof List<?>)) return;
-                List<?> filtered = filter((List<?>) param.args[0], true);
+                List<?> filtered = filter((List<?>) param.args[0], true, true);
                 param.args[0] = filtered;
                 remember(param.thisObject, filtered);
             }
@@ -137,10 +137,17 @@ final class FeedFilter {
         boolean matches(List<?> current) { return items == current && size == current.size(); }
     }
 
-    static List<?> filter(List<?> items) { return filter(items, false); }
+    static List<?> filter(List<?> items) { return filter(items, false, false); }
 
-    /** {@code recommended}: the main feed, where the age limit and the user's own filter also apply. */
-    static List<?> filter(List<?> items, boolean recommended) {
+    static List<?> filter(List<?> items, boolean recommended) { return filter(items, recommended, false); }
+
+    /**
+     * {@code recommended}: the main feed, where the age limit and the user's own filter also apply.
+     * {@code incoming}: a page just arriving from TikTok. Only there are watched videos left out;
+     * the list on screen is filtered again as it grows, and dropping the video being watched from
+     * it would make the feed jump.
+     */
+    static List<?> filter(List<?> items, boolean recommended, boolean incoming) {
         if (items == null || items.isEmpty()) return items;
         boolean ads = Prefs.on(Prefs.ADS);
         boolean live = Prefs.on(Prefs.LIVE);
@@ -151,7 +158,8 @@ final class FeedFilter {
         // Publication time is in seconds.
         long cutoff = recommended && Prefs.on(Prefs.OLD_VIDEOS)
                 ? System.currentTimeMillis() / 1000 - Prefs.oldVideoDays() * 86400L : 0;
-        if (!ads && !live && !suggested && !promo && !ai && rules.isEmpty() && cutoff == 0) return items;
+        boolean seen = recommended && incoming && Prefs.on(Prefs.HIDE_SEEN);
+        if (!ads && !live && !suggested && !promo && !ai && rules.isEmpty() && cutoff == 0 && !seen) return items;
         ArrayList<Object> filtered = null;
         Object fallback = null;
         long fallbackTime = -1;
@@ -167,7 +175,8 @@ final class FeedFilter {
                 long created = createTime(aweme);
                 boolean chosen = (ai && ContentFilter.isAi(aweme))
                         || (cutoff > 0 && created > 0 && created < cutoff)
-                        || ContentFilter.hiddenByRules(aweme, rules);
+                        || ContentFilter.hiddenByRules(aweme, rules)
+                        || (seen && SeenVideos.seen(aweme));
                 if (chosen) {
                     remove = true;
                     if (created > fallbackTime) {
@@ -265,7 +274,7 @@ final class FeedFilter {
         for (String owner : owners) {
             Class<?> type = Hooks.findClass(owner, loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length != 4 || p[0] != int.class || p[1] != String.class || p[2] != List.class
                         || !"kotlin.jvm.functions.Function0".equals(p[3].getName())
@@ -303,7 +312,7 @@ final class FeedFilter {
                     @Override protected void before(Hooks.Call param) throws IllegalAccessException {
                         Object payload = param.args[0];
                         if (payload == null) return;
-                        for (java.lang.reflect.Field field : payload.getClass().getDeclaredFields()) {
+                        for (java.lang.reflect.Field field : Reflect.fields(payload.getClass())) {
                             if (field.getType() != List.class || java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
                             field.setAccessible(true);
                             Object value = field.get(payload);
@@ -344,7 +353,7 @@ final class FeedFilter {
         List<Method> found = new ArrayList<>();
         String[] parts = hit.split("#", 2);
         if (parts.length != 2 || !parts[0].equals(type.getName())) return found;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) found.add(method);
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) found.add(method);
         return found;
     }
 

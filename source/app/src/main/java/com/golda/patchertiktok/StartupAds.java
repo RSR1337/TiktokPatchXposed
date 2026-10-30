@@ -23,7 +23,7 @@ final class StartupAds {
         for (String name : PRELOAD_TASKS) {
             Class<?> task = Hooks.findClass(name, loader);
             if (task == null) continue;
-            for (Method method : task.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(task)) {
                 if ("run".equals(method.getName()) && method.getReturnType() == void.class) {
                     Hooks.hook(method, skip);
                     tasks++;
@@ -36,7 +36,7 @@ final class StartupAds {
             String[] parts = entry.split("#", 2);
             Class<?> owner = Hooks.findClass(parts[0], loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (method.getName().equals(parts[1]) && method.getReturnType() == boolean.class
                         && method.getParameterTypes().length == 0) {
                     Hooks.hook(method, new Hooks.Hook() {

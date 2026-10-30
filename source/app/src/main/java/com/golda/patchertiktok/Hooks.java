@@ -31,7 +31,10 @@ final class Hooks {
         protected void after(Call call) throws Throwable { }
     }
 
-    /** Replaces the method body; whatever {@link #replace} returns or throws is the result. */
+    /**
+     * Replaces the method body with what {@link #replace} returns. If it fails, TikTok's own method
+     * runs instead: a failure of ours never reaches TikTok as an exception.
+     */
     abstract static class Replace extends Hook {
         protected abstract Object replace(Call call) throws Throwable;
 
@@ -39,7 +42,7 @@ final class Hooks {
             try {
                 call.setResult(replace(call));
             } catch (Throwable error) {
-                call.setThrowable(error);
+                log("replace failed: " + error);
             }
         }
     }
@@ -89,6 +92,12 @@ final class Hooks {
     private static final Map<Object, Map<String, Object>> EXTRAS = Collections.synchronizedMap(new WeakHashMap<>());
     private static volatile Backend backend;
 
+    /** Which entry point runs the module (modern libxposed API or the legacy bridge), for bug reports. */
+    static String backendName() {
+        Backend active = backend;
+        return active == null ? "none" : active.getClass().getName();
+    }
+
     private Hooks() { }
 
     /** First entry point wins; the other one stays idle if a framework loads both. */
@@ -109,7 +118,7 @@ final class Hooks {
     /** Hooks every non-abstract declared method with this name. */
     static int hookAll(Class<?> type, String name, Hook hook) {
         int count = 0;
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             if (!method.getName().equals(name) || Modifier.isAbstract(method.getModifiers())) continue;
             hook(method, hook);
             count++;
@@ -117,9 +126,23 @@ final class Hooks {
         return count;
     }
 
+    /**
+     * One hook of many: when the framework refuses this method, it is skipped and logged, and the
+     * feature keeps its other hooks.
+     */
+    static boolean tryHook(Member target, Hook hook) {
+        try {
+            hook(target, hook);
+            return true;
+        } catch (Throwable error) {
+            log("skipped hook " + target.getDeclaringClass().getName() + "#" + target.getName() + ": " + error);
+            return false;
+        }
+    }
+
     static int hookConstructors(Class<?> type, Hook hook) {
         int count = 0;
-        for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+        for (Constructor<?> constructor : Reflect.constructors(type)) {
             hook(constructor, hook);
             count++;
         }
@@ -132,7 +155,7 @@ final class Hooks {
         for (int i = 0; i < parameters.length; i++) parameters[i] = (Class<?>) typesAndHook[i];
         try {
             hook(type.getDeclaredMethod(name, parameters), (Hook) typesAndHook[parameters.length]);
-        } catch (NoSuchMethodException missing) {
+        } catch (NoSuchMethodException | LinkageError missing) {
             throw new NoSuchMethodError(type.getName() + "#" + name);
         }
     }
@@ -159,7 +182,7 @@ final class Hooks {
                 field.setAccessible(true);
                 field.set(target, value);
                 return;
-            } catch (NoSuchFieldException next) {
+            } catch (NoSuchFieldException | LinkageError next) {
                 // Keep looking in the superclass.
             } catch (IllegalAccessException error) {
                 throw new IllegalStateException(error);

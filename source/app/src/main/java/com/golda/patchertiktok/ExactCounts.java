@@ -42,7 +42,7 @@ final class ExactCounts {
         for (String name : CALLERS) {
             Class<?> owner = Hooks.findClass(name, loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 for (String call : Discovery.invokedBy(owner.getName(), method.getName())) {
                     for (Method candidate : resolve(loader, call)) {
                         if (isShortener(candidate) && callsCompactFormatter(loader, candidate)) shorteners.add(candidate);
@@ -51,7 +51,7 @@ final class ExactCounts {
             }
         }
         for (Method method : shorteners) {
-            Hooks.hook(method, new Hooks.Hook() {
+            Hooks.tryHook(method, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     if (!Prefs.on(Prefs.EXACT_COUNTS) || !(param.args[0] instanceof Long)) return;
                     long value = (Long) param.args[0];
@@ -68,7 +68,7 @@ final class ExactCounts {
         for (String name : PROFILE_CALLERS) {
             Class<?> owner = Hooks.findClass(name, loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 for (String call : Discovery.invokedBy(owner.getName(), method.getName())) {
                     for (Method candidate : resolve(loader, call)) {
                         Class<?>[] p = candidate.getParameterTypes();
@@ -81,7 +81,7 @@ final class ExactCounts {
             }
         }
         for (Method helper : helpers) {
-            Hooks.hook(helper, new Hooks.Hook() {
+            Hooks.tryHook(helper, new Hooks.Hook() {
                 @Override protected void after(Hooks.Call param) {
                     // Null or negative: TikTok's own fallback text stays.
                     if (!Prefs.on(Prefs.EXACT_COUNTS) || !(param.args[1] instanceof Number)) return;
@@ -116,7 +116,7 @@ final class ExactCounts {
         if (parts.length != 2 || parts[1].startsWith("<")) return found;
         Class<?> type = Hooks.findClass(parts[0], loader);
         if (type == null || type.getName().startsWith("java.") || type.getName().startsWith("android.")) return found;
-        for (Method method : type.getDeclaredMethods()) if (method.getName().equals(parts[1])) found.add(method);
+        for (Method method : Reflect.methods(type)) if (method.getName().equals(parts[1])) found.add(method);
         return found;
     }
 

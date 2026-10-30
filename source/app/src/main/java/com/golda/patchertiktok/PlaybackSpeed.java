@@ -110,7 +110,7 @@ final class PlaybackSpeed {
         Method gate = null;
         Method restore = null;
         List<Method> getters = new ArrayList<>();
-        for (Method method : manager.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(manager)) {
             if (signature(method, true, boolean.class, aweme)
                     && calls(method).contains(AWEME + "#isCanPlay")) {
                 if (gate != null) {
@@ -248,13 +248,13 @@ final class PlaybackSpeed {
                 false, void.class, sharePackage)) {
             if (!calls(marker).contains("android.os.BaseBundle#getBoolean")) continue;
             Class<?> row = marker.getDeclaringClass();
-            for (Method provider : row.getDeclaredMethods()) {
+            for (Method provider : Reflect.methods(row)) {
                 if (!signature(provider, false, List.class)) continue;
                 String listCall = row.getName() + "#" + provider.getName();
                 List<Method> rowBuilders = new ArrayList<>();
                 boolean rebuilds = false;
                 boolean creates = false;
-                for (Method builder : row.getDeclaredMethods()) {
+                for (Method builder : Reflect.methods(row)) {
                     Class<?>[] p = builder.getParameterTypes();
                     boolean rebuild = signature(builder, false, void.class, Context.class, ViewGroup.class);
                     boolean create = !Modifier.isStatic(builder.getModifiers())
@@ -265,7 +265,7 @@ final class PlaybackSpeed {
                             || !calls(builder).contains("android.view.ViewGroup#addView")) continue;
                     // Both bind paths iterate this list, format each float, and add one view per value.
                     boolean formatsFloat = false;
-                    for (Method formatter : row.getDeclaredMethods()) {
+                    for (Method formatter : Reflect.methods(row)) {
                         if (signature(formatter, false, String.class, float.class)
                                 && calls(builder).contains(row.getName() + "#" + formatter.getName())
                                 && calls(formatter).contains("java.lang.StringBuilder#append")) {
@@ -318,7 +318,7 @@ final class PlaybackSpeed {
             // Kotlin's experiment value is a Function0<Boolean>. Its constructor is called by
             // the experiment holder's <clinit>; its only static ()boolean method exposes the value.
             boolean booleanSupplier = false;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 if (method.getName().equals(parts[1]) && signature(method, false, Object.class)
                         && calls(method).contains("java.lang.Boolean#valueOf")) booleanSupplier = true;
             }
@@ -329,7 +329,7 @@ final class PlaybackSpeed {
                 Class<?> holder = Hooks.findClass(owner[0], loader);
                 if (holder == null) continue;
                 List<Method> getters = new ArrayList<>();
-                for (Method method : holder.getDeclaredMethods()) {
+                for (Method method : Reflect.methods(holder)) {
                     if (signature(method, true, boolean.class)) getters.add(method);
                 }
                 if (getters.size() == 1) experimentGetters.add(getters.get(0));
@@ -413,7 +413,7 @@ final class PlaybackSpeed {
             if (parts.length != 2) continue;
             Class<?> type = Hooks.findClass(parts[0], loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 if (method.getName().equals(parts[1]) && signature(method, isStatic, result, parameters)) {
                     matches.add(method);
                 }
@@ -462,7 +462,7 @@ final class PlaybackSpeed {
         if (source instanceof View) return ((View) source).getContext();
         if (source != null) {
             for (Class<?> type = source.getClass(); type != null; type = type.getSuperclass()) {
-                for (Field field : type.getDeclaredFields()) {
+                for (Field field : Reflect.fields(type)) {
                     if (Modifier.isStatic(field.getModifiers()) || !Context.class.isAssignableFrom(field.getType())) continue;
                     field.setAccessible(true);
                     Object value = field.get(source);

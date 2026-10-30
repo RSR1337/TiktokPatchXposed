@@ -113,7 +113,7 @@ final class DownloadModels {
         Object best = null;
         long bestArea = -1;
         for (Class<?> type = image.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            for (java.lang.reflect.Field field : type.getDeclaredFields()) {
+            for (java.lang.reflect.Field field : Reflect.fields(type)) {
                 if (java.lang.reflect.Modifier.isStatic(field.getModifiers()) || excluded(field.getName())) continue;
                 Object value;
                 try {

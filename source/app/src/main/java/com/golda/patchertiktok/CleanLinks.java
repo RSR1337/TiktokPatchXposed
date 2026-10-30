@@ -51,7 +51,7 @@ final class CleanLinks {
             "is_copy_url", "checksum", "enable_checksum", "sec_uid", "social_share_type", "social_sharing",
             "language", "refer", "preview_pb"));
     private static final ExecutorService RESOLVER = Executors.newSingleThreadExecutor(task -> {
-        Thread thread = new Thread(task, "tiktok-clean-links");
+        Thread thread = new Thread(Safe.run("clean links", task), "tiktok-clean-links");
         thread.setDaemon(true);
         return thread;
     });
@@ -90,7 +90,7 @@ final class CleanLinks {
 
     /** Resolves short links off the main thread, then swaps the clipboard if nothing else was copied. */
     private static void expandLater(WeakReference<ClipboardManager> clipboard, String copied) {
-        RESOLVER.execute(() -> {
+        RESOLVER.execute(Safe.run("clean links", () -> {
             Map<String, String> expanded = new LinkedHashMap<>();
             Matcher matcher = SHORT.matcher(copied);
             while (matcher.find()) {
@@ -101,7 +101,7 @@ final class CleanLinks {
             String result = copied;
             for (Map.Entry<String, String> entry : expanded.entrySet()) result = result.replace(entry.getKey(), entry.getValue());
             String finalText = result;
-            new Handler(Looper.getMainLooper()).post(() -> {
+            new Handler(Looper.getMainLooper()).post(Safe.run("clean links", () -> {
                 ClipboardManager manager = clipboard.get();
                 if (manager == null || !Prefs.on(Prefs.CLEAN_LINKS)) return;
                 try {
@@ -114,8 +114,8 @@ final class CleanLinks {
                 } catch (RuntimeException error) {
                     RuntimeLog.log("clean links: clipboard unavailable " + error.getClass().getSimpleName());
                 }
-            });
-        });
+            }));
+        }));
     }
 
     /** The clean destination of a short link, or null if it cannot be resolved right now. */

@@ -42,7 +42,7 @@ final class InboxReadAll {
         Class<?> tab = Hooks.findClass(TAB, classLoader);
         store = Discovery.firstClass(classLoader, ALL_QUERY);
         if (store != null) {
-            for (Method method : store.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(store)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length == 5 && p[0] == int.class && p[1] == int.class && p[2].isEnum() && p[4] == boolean.class) {
                     allChats = method;
@@ -55,7 +55,7 @@ final class InboxReadAll {
             return;
         }
         int hooks = 0;
-        for (Method method : tab.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(tab)) {
             if (method.getReturnType() != View.class || method.getParameterTypes().length != 1
                     || Modifier.isStatic(method.getModifiers())) continue;
             Hooks.hook(method, new Hooks.Hook() {
@@ -75,7 +75,7 @@ final class InboxReadAll {
         tab.setOnLongClickListener(view -> {
             if (!Prefs.on(Prefs.READ_ALL)) return false;
             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-            if (RUNNING.compareAndSet(false, true)) new Thread(() -> offer(view), "tpx-read-all").start();
+            if (RUNNING.compareAndSet(false, true)) new Thread(Safe.run("read all", () -> offer(view)), "tpx-read-all").start();
             return true;
         });
     }
@@ -98,7 +98,7 @@ final class InboxReadAll {
             RUNNING.set(false);
         }
         Batch ready = batch;
-        MAIN.post(() -> show(tab, ready));
+        MAIN.post(Safe.run("read all", () -> show(tab, ready)));
     }
 
     private static Batch load() throws ReflectiveOperationException {
@@ -137,7 +137,7 @@ final class InboxReadAll {
             return;
         }
         confirm(activity, batch.unread, () -> {
-            if (RUNNING.compareAndSet(false, true)) new Thread(() -> mark(tab, batch), "tpx-read-all").start();
+            if (RUNNING.compareAndSet(false, true)) new Thread(Safe.run("read all", () -> mark(tab, batch)), "tpx-read-all").start();
         });
     }
 
@@ -202,10 +202,10 @@ final class InboxReadAll {
         if (activity.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, ripple, true)) {
             button.setBackgroundResource(ripple.resourceId);
         }
-        button.setOnClickListener(view -> {
+        button.setOnClickListener(Safe.click("read all", view -> {
             dialog.dismiss();
             if (action != null) action.run();
-        });
+        }));
         holder.addView(button, new android.widget.LinearLayout.LayoutParams(-1, dp(density, 50)));
         return holder;
     }
@@ -232,12 +232,12 @@ final class InboxReadAll {
     }
 
     private static void toast(View tab, String text) {
-        MAIN.post(() -> Toast.makeText(tab.getContext(), text, Toast.LENGTH_SHORT).show());
+        MAIN.post(Safe.run("read all", () -> Toast.makeText(tab.getContext(), text, Toast.LENGTH_SHORT).show()));
     }
 
     /** Classes already checked for the bulk method, with the answer. */
     private static final Map<Class<?>, Method> BULK = new java.util.concurrent.ConcurrentHashMap<>();
-    private static final Method NONE = InboxReadAll.class.getDeclaredMethods()[0];
+    private static final Method NONE = Reflect.methods(InboxReadAll.class)[0];
 
     /**
      * The chat list's bulk "mark read" that takes chats, not chat ids. Both take (List, callback),
@@ -247,7 +247,7 @@ final class InboxReadAll {
         Method known = BULK.get(type);
         if (known != null) return known == NONE ? null : known;
         List<Method> pairs = new java.util.ArrayList<>();
-        for (Method method : type.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(type)) {
             Class<?>[] p = method.getParameterTypes();
             if (method.getReturnType() == void.class && p.length == 2 && p[0] == List.class
                     && !Modifier.isStatic(method.getModifiers()) && !p[1].isPrimitive()) pairs.add(method);
@@ -283,7 +283,7 @@ final class InboxReadAll {
             for (Class<?> owner = value.getClass(); owner != null && owner != Object.class; owner = owner.getSuperclass()) {
                 String name = owner.getName();
                 if (name.startsWith("java.") || name.startsWith("android.") || name.startsWith("kotlin.")) break;
-                for (Field field : owner.getDeclaredFields()) {
+                for (Field field : Reflect.fields(owner)) {
                     Class<?> kind = field.getType();
                     if (Modifier.isStatic(field.getModifiers()) || kind.isPrimitive() || kind == String.class
                             || View.class.isAssignableFrom(kind)) continue;
@@ -304,7 +304,7 @@ final class InboxReadAll {
     private static List<?> list(Object result) {
         if (result instanceof List) return (List<?>) result;
         if (result == null) return null;
-        for (Field field : result.getClass().getDeclaredFields()) {
+        for (Field field : Reflect.fields(result.getClass())) {
             try {
                 field.setAccessible(true);
                 Object value = field.get(result);

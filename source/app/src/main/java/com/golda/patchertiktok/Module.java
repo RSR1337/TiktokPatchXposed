@@ -22,14 +22,16 @@ final class Module {
     static void load(String packageName, String processName, ClassLoader loader) {
         if (!targets(packageName) || !LOADED.compareAndSet(false, true)) return;
         boolean main = packageName.equals(processName);
+        if (main) run("safe mode", () -> SafeMode.enter(packageName));
 
-        if (main) {
+        if (main && !SafeMode.active()) {
             // These hooks read their toggle on every call, so they are safe before settings load.
             run("feed filter", () -> FeedFilter.install(loader));
             run("search ads", () -> ContentFilter.installSearch(loader));
             run("remember clear display", () -> CleanScreen.install(loader));
             run("resume position", () -> ResumePosition.install(loader));
             run("auto-scroll", () -> AutoScroll.install(loader));
+            run("double tap like", () -> DoubleTapLike.install(loader));
             run("comment copy", () -> CommentCopy.install(loader));
             run("comment media", () -> CommentMedia.install(loader));
             run("external browser", () -> ExternalLinks.install(loader));
@@ -56,8 +58,8 @@ final class Module {
                 // TikTok loads and caches its fonts while attaching, so the font goes in first.
                 if (!main || !(param.args[0] instanceof Context)) return;
                 Context base = (Context) param.args[0];
-                Prefs.load(base);
-                if (Prefs.on(Prefs.FONT)) {
+                run("settings", () -> Prefs.load(base));
+                if (Prefs.on(Prefs.FONT) && !SafeMode.active()) {
                     run("code index", () -> Discovery.init(base));
                     run("font", () -> FontSwap.install(base, loader));
                 }
@@ -71,9 +73,15 @@ final class Module {
 
     /** Runs once the Application context exists, before TikTok's own onCreate. */
     private static void startup(Application app, ClassLoader loader, boolean main) {
-        Prefs.load(app);
-        if (main) RuntimeLog.attach(app);
-        if (main) Overlay.settingsLoaded();
+        // Every step goes through run(): one that fails must not stop the ones after it.
+        run("settings", () -> Prefs.load(app));
+        if (main) run("log", () -> RuntimeLog.attach(app));
+        if (main) run("crash log", () -> CrashLog.install(app));
+        if (main && SafeMode.active()) {
+            safeStartup(app, loader);
+            return;
+        }
+        if (main) run("overlay settings", Overlay::settingsLoaded);
         if (main) run("accent color", () -> {
             AccentColor.install();
             AccentColor.installFor(app);
@@ -89,9 +97,12 @@ final class Module {
         run("language", () -> I18n.use(app.getResources().getConfiguration().getLocales().get(0)));
         run("code index", () -> Discovery.init(app));
         run("friend card", () -> FeedFilter.installCardInsertion(loader));
+        run("seen videos", () -> SeenVideos.install(app, loader));
         run("unmute", () -> Unmute.install(loader));
         run("hd upload", () -> HdUpload.install(loader));
         run("read receipts", () -> ReadReceipts.install(loader));
+        run("unsent messages", () -> UnsentMessages.install(loader));
+        run("LIVE record", () -> LiveRecord.install(loader));
         run("read all", () -> InboxReadAll.install(loader));
         run("comment author", () -> CommentAuthor.install(loader));
         run("native auto-scroll", () -> AutoScroll.installNative(loader));
@@ -130,8 +141,24 @@ final class Module {
         run("seekbar", () -> Seekbar.install(loader));
         run("settings row", () -> SettingsEntry.install(app, loader));
         run("auto streaks", () -> AutoStreakManager.install(app, loader));
-        Discovery.release();
+        run("code index release", Discovery::release);
         RuntimeLog.log(BuildConfig.VERSION_NAME + " started in " + app.getPackageName());
+        run("safe mode", SafeMode::started);
+    }
+
+    /**
+     * After TikTok closed right after starting three times, only the settings row (with the bug
+     * report) is installed, and the user is told why everything else is off this time.
+     */
+    private static void safeStartup(Application app, ClassLoader loader) {
+        RuntimeLog.log("safe mode: TikTok closed right after starting several times, features are off for this launch");
+        run("language", () -> I18n.use(app.getResources().getConfiguration().getLocales().get(0)));
+        run("code index", () -> Discovery.init(app));
+        run("settings row", () -> SettingsEntry.install(app, loader));
+        run("code index release", Discovery::release);
+        run("safe mode", SafeMode::started);
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(Safe.run("safe mode notice", () ->
+                android.widget.Toast.makeText(app, I18n.get(I18n.S.SAFE_MODE_SHORT), android.widget.Toast.LENGTH_LONG).show()), 3_000L);
     }
 
     private static void run(String name, Runnable task) {
@@ -139,7 +166,14 @@ final class Module {
         try {
             task.run();
         } catch (Throwable error) {
-            FeatureStatus.failed(name, error.getClass().getSimpleName());
+            // Whatever goes wrong here must not stop the features after this one.
+            String reason;
+            try {
+                reason = FeatureStatus.describe(error);
+            } catch (Throwable broken) {
+                reason = error.getClass().getSimpleName();
+            }
+            FeatureStatus.failed(name, reason);
             RuntimeLog.log(name + " unavailable: " + error);
         } finally {
             FeatureStatus.end();
@@ -151,7 +185,7 @@ final class Module {
         for (String name : new String[]{"com.bytedance.lobby.google.GoogleAuth", "com.bytedance.lobby.google.GoogleOneTapAuth"}) {
             Class<?> type = Hooks.findClass(name, loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 if (method.getParameterTypes().length == 0 && method.getReturnType() == boolean.class
                         && Modifier.isFinal(method.getModifiers()) && Modifier.isPublic(method.getModifiers())) {
                     Hooks.hook(method, Hooks.constant(false));

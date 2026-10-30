@@ -36,7 +36,7 @@ public final class DownloadsPlus {
     private static final Set<String> ACTIVE = Collections.synchronizedSet(new HashSet<>());
     private static final ThreadPoolExecutor WORKER = new ThreadPoolExecutor(1, 1, 30, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(4), task -> {
-                Thread thread = new Thread(task, "tiktok-downloads-plus");
+                Thread thread = new Thread(Safe.run("downloads", task), "tiktok-downloads-plus");
                 thread.setDaemon(true);
                 return thread;
             }, new ThreadPoolExecutor.AbortPolicy());
@@ -102,7 +102,7 @@ public final class DownloadsPlus {
             if (separator <= 0) continue;
             Class<?> owner = Hooks.findClass(entry.substring(0, separator), loader);
             if (owner == null || modelField(owner, aweme) == null || !hasActivity(owner)) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (!method.getName().equals(entry.substring(separator + 1)) || method.getReturnType() != void.class
                         || Modifier.isAbstract(method.getModifiers()) || Modifier.isStatic(method.getModifiers())) continue;
                 Class<?>[] args = method.getParameterTypes();
@@ -281,7 +281,7 @@ public final class DownloadsPlus {
         List<DownloadModels.Item> items = new ArrayList<>(choices);
         String batch = Long.toString(System.currentTimeMillis()) + '_' + UUID.randomUUID().toString().substring(0, 8);
         try {
-            WORKER.execute(() -> {
+            WORKER.execute(Safe.run("downloads", () -> {
                 int saved = 0;
                 try {
                     for (int i = 0; i < items.size(); i++) if (MediaDownload.save(app, items.get(i), id, batch, i + 1)) saved++;
@@ -298,7 +298,7 @@ public final class DownloadsPlus {
                     }
                     toast(app, message);
                 }
-            });
+            }));
             toast(app, I18n.get(I18n.S.DL_STARTED));
             return true;
         } catch (RuntimeException ignored) {
@@ -309,16 +309,16 @@ public final class DownloadsPlus {
 
     private static void toast(Context app, String message) {
         try {
-            new Handler(Looper.getMainLooper()).post(() -> {
+            new Handler(Looper.getMainLooper()).post(Safe.run("downloads", () -> {
                 try { Toast.makeText(app, message, Toast.LENGTH_SHORT).show(); } catch (RuntimeException ignored) { }
-            });
+            }));
         } catch (RuntimeException ignored) { }
     }
 
     private static Field modelField(Class<?> owner, Class<?> aweme) {
         Field found = null;
         for (Class<?> type = owner; type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (Modifier.isStatic(field.getModifiers()) || field.getType() != aweme) continue;
                 if (found != null) return null;
                 field.setAccessible(true);
@@ -330,7 +330,7 @@ public final class DownloadsPlus {
 
     private static boolean hasActivity(Class<?> owner) {
         for (Class<?> type = owner; type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (!Modifier.isStatic(field.getModifiers()) && Activity.class.isAssignableFrom(field.getType())) return true;
             }
         }
@@ -339,7 +339,7 @@ public final class DownloadsPlus {
 
     private static Activity ownerActivity(Object owner) throws IllegalAccessException {
         for (Class<?> type = owner.getClass(); type != null; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (Modifier.isStatic(field.getModifiers()) || !Activity.class.isAssignableFrom(field.getType())) continue;
                 field.setAccessible(true);
                 Activity value = (Activity) field.get(owner);

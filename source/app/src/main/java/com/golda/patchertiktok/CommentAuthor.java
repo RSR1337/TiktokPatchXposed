@@ -42,7 +42,7 @@ final class CommentAuthor {
             RuntimeLog.log("comment author unavailable: comment cell not found");
             return;
         }
-        for (Method method : cell.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(cell)) {
             if (method.getReturnType() == comment && method.getParameterCount() == 0 && !Modifier.isStatic(method.getModifiers())) {
                 method.setAccessible(true);
                 COMMENTS.add(method);
@@ -50,7 +50,7 @@ final class CommentAuthor {
         }
         itemView = Reflect.field(cell, "itemView");
         int binds = 0;
-        for (Method method : cell.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(cell)) {
             if (Modifier.isStatic(method.getModifiers()) || Modifier.isAbstract(method.getModifiers())
                     || method.getReturnType() != void.class || method.getParameterCount() != 1) continue;
             List<String> calls = Discovery.invokedBy(cell.getName(), method.getName());
@@ -81,10 +81,10 @@ final class CommentAuthor {
         String at = handle instanceof String && !((String) handle).isEmpty() && !handle.equals(nickname) ? "@" + handle : null;
         ViewGroup view = (ViewGroup) row;
         // TikTok can style the name a moment after the bind; mark it then.
-        view.post(() -> {
+        view.post(Safe.run("comment author", () -> {
             TextView name = nameLabel(view, (String) nickname);
             if (name != null) mark(name, at, flag);
-        });
+        }));
     }
 
     private static Object comment(Object cell) {

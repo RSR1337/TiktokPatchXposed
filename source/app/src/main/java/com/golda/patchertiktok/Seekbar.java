@@ -26,7 +26,7 @@ final class Seekbar {
             Class<?> controller = Hooks.findClass(parts[0], loader);
             if (controller == null || aweme == null) continue;
             List<Method> shortMethods = new ArrayList<>();
-            for (Method method : controller.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(controller)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (method.getName().equals(parts[1]) && method.getReturnType() == boolean.class
                         && p.length == 1 && p[0] == aweme) {
@@ -74,7 +74,7 @@ final class Seekbar {
             String[] target = call.split("#", 2);
             Class<?> owner = Hooks.findClass(target[0], loader);
             if (owner == null || target.length < 2) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!method.getName().equals(target[1]) || method.getReturnType() != void.class
                         || p.length == 0 || p[0] != String.class) continue;
@@ -101,8 +101,8 @@ final class Seekbar {
         if (assem == null) return 0;
         int count = 0;
         List<Method> hooked = new ArrayList<>();
-        for (Field field : assem.getDeclaredFields()) {
-            for (Method method : field.getType().getDeclaredMethods()) {
+        for (Field field : Reflect.fields(assem)) {
+            for (Method method : Reflect.methods(field.getType())) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!"setSeekBarShowType".equals(method.getName()) || p.length != 1 || p[0] != int.class
                         || hooked.contains(method)) continue;

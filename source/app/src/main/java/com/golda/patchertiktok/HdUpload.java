@@ -34,7 +34,7 @@ final class HdUpload {
             List<Method> decisions = new java.util.ArrayList<>();
             List<Method> labels = new java.util.ArrayList<>();
             List<Method> switches = new java.util.ArrayList<>();
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 int modifiers = method.getModifiers();
                 if (!Modifier.isStatic(modifiers) || !entry.getValue().contains(method.getName())) continue;
                 Class<?>[] p = method.getParameterTypes();
@@ -80,7 +80,7 @@ final class HdUpload {
         }
         int hooks = 0;
         for (Class<?> builder : builders) {
-            for (Method method : builder.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(builder)) {
                 if (method.getReturnType() != settings || Modifier.isAbstract(method.getModifiers())) continue;
                 Hooks.hook(method, new Hooks.Hook() {
                     @Override protected void after(Hooks.Call param) {

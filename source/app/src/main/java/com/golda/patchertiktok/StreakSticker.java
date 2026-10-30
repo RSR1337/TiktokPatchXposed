@@ -115,7 +115,7 @@ final class StreakSticker {
             if (args == null) return null;
             AtomicReference<Throwable> failure = new AtomicReference<>();
             CountDownLatch done = new CountDownLatch(1);
-            MAIN.post(() -> {
+            MAIN.post(Safe.run("streak sticker", () -> {
                 try {
                     method.invoke(service, args);
                 } catch (Throwable error) {
@@ -123,7 +123,7 @@ final class StreakSticker {
                 } finally {
                     done.countDown();
                 }
-            });
+            }));
             if (!done.await(10, TimeUnit.SECONDS)) return Boolean.FALSE;
             if (failure.get() != null) {
                 RuntimeLog.log("streak sticker failed: " + failure.get().getClass().getSimpleName());
@@ -142,7 +142,7 @@ final class StreakSticker {
     /** The one public method taking a context, a sticker item and a conversation id. */
     private static Method sendMethod(Class<?> type, Class<?> itemType) {
         Method found = null;
-        for (Method method : type.getMethods()) {
+        for (Method method : Reflect.publicMethods(type)) {
             Class<?>[] params = method.getParameterTypes();
             boolean context = false;
             boolean item = false;
@@ -186,7 +186,7 @@ final class StreakSticker {
             Class<?> type;
             try {
                 type = Class.forName(name, false, loader);
-            } catch (ClassNotFoundException missing) {
+            } catch (ClassNotFoundException | LinkageError missing) {
                 continue;
             }
             if (!type.isEnum() || !param.isAssignableFrom(type)) continue;
@@ -213,7 +213,7 @@ final class StreakSticker {
             try {
                 store.getClass().getMethod("refreshFavouriteStickers", boolean.class, boolean.class, String.class)
                         .invoke(store, true, true, "favourite_tab");
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException | LinkageError ignored) {
                 return collect(before, itemType);
             }
             // The cached list can be old, with expired picture links; wait for the reloaded one.
@@ -236,18 +236,18 @@ final class StreakSticker {
     private static Object store(ClassLoader loader) throws ReflectiveOperationException {
         Class<?> helper = Class.forName(HELPER, false, loader);
         Object instance = null;
-        for (Field field : helper.getDeclaredFields()) {
+        for (Field field : Reflect.fields(helper)) {
             if (Modifier.isStatic(field.getModifiers()) && field.getType() == helper) {
                 field.setAccessible(true);
                 instance = field.get(null);
             }
         }
         if (instance == null) return null;
-        for (Method method : helper.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(helper)) {
             if (method.getParameterCount() != 0 || Modifier.isStatic(method.getModifiers())) continue;
             try {
                 method.getReturnType().getMethod("getFavouriteStickersFlow");
-            } catch (NoSuchMethodException other) {
+            } catch (NoSuchMethodException | LinkageError other) {
                 continue;
             }
             method.setAccessible(true);
@@ -279,7 +279,7 @@ final class StreakSticker {
         Object data = Reflect.get(holder, "data");
         if (data instanceof List) return data;
         for (Class<?> type = holder.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 // Kotlin's generic result keeps the list in a field declared as Object.
                 if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) continue;
                 try {
@@ -305,7 +305,7 @@ final class StreakSticker {
             if ((Integer) entry[1] >= 2) continue;
             for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
                 if (type.getName().startsWith("java.")) break;
-                for (Field field : type.getDeclaredFields()) {
+                for (Field field : Reflect.fields(type)) {
                     if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) continue;
                     try {
                         field.setAccessible(true);
@@ -338,7 +338,7 @@ final class StreakSticker {
             if ((Integer) entry[1] >= 2) continue;
             for (Class<?> type = value.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
                 if (type.getName().startsWith("java.")) break;
-                for (Field field : type.getDeclaredFields()) {
+                for (Field field : Reflect.fields(type)) {
                     if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()
                             || field.getType() == String.class) continue;
                     try {

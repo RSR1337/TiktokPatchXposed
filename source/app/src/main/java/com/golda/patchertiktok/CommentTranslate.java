@@ -50,7 +50,7 @@ final class CommentTranslate {
     private static Handler handler;
     private static boolean scheduled;
     private static Anchors anchors;
-    private static final Runnable DRAIN = CommentTranslate::drain;
+    private static final Runnable DRAIN = Safe.run("comment translation", CommentTranslate::drain);
 
     private CommentTranslate() { }
 
@@ -123,7 +123,7 @@ final class CommentTranslate {
             String[] parts = renderer.split("#", 2);
             Class<?> owner = Hooks.findClass(parts[0], loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (!method.getName().equals(parts[1])) continue;
                 Hooks.hook(method, new Hooks.Hook() {
                     @Override protected void before(Hooks.Call call) { inline = true; }
@@ -141,7 +141,7 @@ final class CommentTranslate {
             Method getter;
             try {
                 getter = impl.getClass().getMethod(name);
-            } catch (NoSuchMethodException missing) { continue; }
+            } catch (NoSuchMethodException | LinkageError missing) { continue; }
             if (getter.getReturnType() != boolean.class) continue;
             // The service only forwards; the switch itself is the one static (): boolean it reads.
             for (Method target : resolve(loader, Discovery.invokedBy(impl.getClass().getName(), name))) {
@@ -255,7 +255,7 @@ final class CommentTranslate {
         Class<?> translation = required(TRANSLATION, loader);
         Class<?> setting = required(SETTINGS, loader);
         Method bind = null;
-        for (Method method : cell.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(cell)) {
             if (Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class
                     || method.getParameterCount() != 1 || Modifier.isAbstract(method.getModifiers())) continue;
             List<String> calls = calls(method);
@@ -274,7 +274,7 @@ final class CommentTranslate {
         Set<Method> dispatchers = new LinkedHashSet<>();
         for (Method provider : resolve(loader, calls(bind))) {
             if (!signature(provider, true, liveData, String.class)) continue;
-            for (Method method : provider.getDeclaringClass().getDeclaredMethods()) {
+            for (Method method : Reflect.methods(provider.getDeclaringClass())) {
                 Class<?>[] p = method.getParameterTypes();
                 if (!Modifier.isStatic(method.getModifiers()) || method.getReturnType() != void.class
                         || p.length != 3 || p[0] != List.class || p[2] != boolean.class) continue;
@@ -301,9 +301,9 @@ final class CommentTranslate {
         Field model = uniqueField(presenter, comment);
         Field controller = null;
         Field presenterField = null;
-        for (Field field : cell.getDeclaredFields()) {
+        for (Field field : Reflect.fields(cell)) {
             if (Modifier.isStatic(field.getModifiers())) continue;
-            for (Field nested : field.getType().getDeclaredFields()) {
+            for (Field nested : Reflect.fields(field.getType())) {
                 if (Modifier.isStatic(nested.getModifiers()) || !nested.getType().isInterface()
                         || !nested.getType().isAssignableFrom(presenter)) continue;
                 try {
@@ -311,7 +311,7 @@ final class CommentTranslate {
                     Method original = nested.getType().getMethod("resetTranslate");
                     if (translate.getReturnType() != void.class || translate.getParameterCount() != 0
                             || original.getReturnType() != void.class || original.getParameterCount() != 0) continue;
-                } catch (NoSuchMethodException missing) { continue; }
+                } catch (NoSuchMethodException | LinkageError missing) { continue; }
                 if (controller != null) throw new IllegalStateException("Ambiguous presenter path");
                 controller = field;
                 presenterField = nested;
@@ -328,7 +328,7 @@ final class CommentTranslate {
             Class<?> request = Hooks.findClass(parts[0], loader);
             if (request == null) continue;
             boolean requestShape = false;
-            for (java.lang.reflect.Constructor<?> constructor : request.getDeclaredConstructors()) {
+            for (java.lang.reflect.Constructor<?> constructor : Reflect.constructors(request)) {
                 if (Arrays.equals(constructor.getParameterTypes(),
                         new Class<?>[]{List.class, dispatch.getParameterTypes()[1]})) requestShape = true;
             }
@@ -363,7 +363,7 @@ final class CommentTranslate {
 
     private static Field uniqueField(Class<?> type, Class<?> fieldType) {
         Field result = null;
-        for (Field field : type.getDeclaredFields()) {
+        for (Field field : Reflect.fields(type)) {
             if (Modifier.isStatic(field.getModifiers()) || field.getType() != fieldType) continue;
             if (result != null) return null;
             result = field;
@@ -388,7 +388,7 @@ final class CommentTranslate {
             if (parts.length != 2 || parts[1].startsWith("<")) continue;
             Class<?> type = Hooks.findClass(parts[0], loader);
             if (type == null) continue;
-            for (Method method : type.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(type)) {
                 if (method.getName().equals(parts[1])) result.add(method);
             }
         }

@@ -54,13 +54,13 @@ final class FontSwap {
             Method byName = null;
             Method byAxes = null;
             for (Class<?> contract : type.getInterfaces()) {
-                for (Method declared : contract.getDeclaredMethods()) {
+                for (Method declared : Reflect.methods(contract)) {
                     if (declared.getReturnType() != Typeface.class) continue;
                     Class<?>[] p = declared.getParameterTypes();
                     Method own;
                     try {
                         own = type.getDeclaredMethod(declared.getName(), p);
-                    } catch (NoSuchMethodException missing) {
+                    } catch (NoSuchMethodException | LinkageError missing) {
                         continue;
                     }
                     if (Modifier.isAbstract(own.getModifiers())) continue;

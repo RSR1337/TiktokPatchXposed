@@ -99,7 +99,7 @@ final class SettingsEntry {
             String[] parts = call.split("#", 2);
             Class<?> owner = Hooks.findClass(parts[0], loader);
             if (owner == null) continue;
-            for (Method method : owner.getDeclaredMethods()) {
+            for (Method method : Reflect.methods(owner)) {
                 if (!method.getName().equals(parts[1]) || !Modifier.isStatic(method.getModifiers())) continue;
                 Class<?>[] p = method.getParameterTypes();
                 if (p.length == 2 && p[0] == Iterable.class && List.class.isAssignableFrom(method.getReturnType())) {
@@ -123,7 +123,7 @@ final class SettingsEntry {
         // The cell factory's class also holds the sort key: a static (item) -> int method.
         int sortHooks = 0;
         Class<?> baseItem = factory.getParameterTypes()[1];
-        for (Method method : factory.getDeclaringClass().getDeclaredMethods()) {
+        for (Method method : Reflect.methods(factory.getDeclaringClass())) {
             Class<?>[] p = method.getParameterTypes();
             if (Modifier.isStatic(method.getModifiers()) && method.getReturnType() == int.class
                     && p.length == 1 && p[0] == baseItem) {
@@ -138,7 +138,7 @@ final class SettingsEntry {
 
         Class<?> privacyItem = Class.forName(PRIVACY_ITEM, false, loader);
         Field keyField = null;
-        for (Field field : privacyItem.getDeclaredFields()) {
+        for (Field field : Reflect.fields(privacyItem)) {
             if (field.getType() == String.class && !Modifier.isStatic(field.getModifiers())) {
                 field.setAccessible(true);
                 keyField = field;
@@ -182,7 +182,7 @@ final class SettingsEntry {
     /** PrivacyItemState(icon, searchIcon, rightLabel, key, title, eventSink, action). */
     private static Object buildState(Class<?> stateType, ClassLoader loader) throws Exception {
         Constructor<?> constructor = null;
-        for (Constructor<?> candidate : stateType.getDeclaredConstructors()) {
+        for (Constructor<?> candidate : Reflect.constructors(stateType)) {
             Class<?>[] p = candidate.getParameterTypes();
             if (p.length == 7 && p[2] == String.class && p[3] == String.class && p[4] == String.class) {
                 constructor = candidate;
@@ -243,7 +243,7 @@ final class SettingsEntry {
     private static Context contextField(Object event) {
         if (event == null) return null;
         for (Class<?> type = event.getClass(); type != null && type != Object.class; type = type.getSuperclass()) {
-            for (Field field : type.getDeclaredFields()) {
+            for (Field field : Reflect.fields(type)) {
                 if (!Context.class.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);
@@ -258,7 +258,7 @@ final class SettingsEntry {
     private static Object kotlinUnit(ClassLoader loader) {
         try {
             Class<?> unit = Class.forName("kotlin.Unit", false, loader);
-            for (Field field : unit.getDeclaredFields()) {
+            for (Field field : Reflect.fields(unit)) {
                 if (Modifier.isStatic(field.getModifiers()) && field.getType() == unit) {
                     field.setAccessible(true);
                     return field.get(null);
@@ -288,7 +288,7 @@ final class SettingsEntry {
                 // TikTok's splash activity finishes immediately, so open from the next real screen.
                 if (openPending && !activity.isFinishing() && !(activity instanceof ModSettingsActivity)) {
                     openPending = false;
-                    activity.getWindow().getDecorView().postDelayed(() -> open(activity), 250);
+                    activity.getWindow().getDecorView().postDelayed(Safe.run("settings row", () -> open(activity)), 250);
                 }
             }
 

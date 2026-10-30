@@ -35,7 +35,7 @@ final class AvatarDownload {
                 if (!Prefs.on(Prefs.AVATAR_DOWNLOAD)) return;
                 Activity activity = (Activity) param.thisObject;
                 // The photo view is bound once the screen is laid out.
-                activity.getWindow().getDecorView().post(() -> attach(activity, user, avatarView));
+                activity.getWindow().getDecorView().post(Safe.run("avatar download", () -> attach(activity, user, avatarView)));
             }
         });
     }
@@ -73,7 +73,7 @@ final class AvatarDownload {
     private static Object fieldOf(Object target, Class<?> type) {
         Object found = null;
         for (Class<?> owner = target.getClass(); owner != null && owner != Activity.class; owner = owner.getSuperclass()) {
-            for (Field field : owner.getDeclaredFields()) {
+            for (Field field : Reflect.fields(owner)) {
                 if (Modifier.isStatic(field.getModifiers()) || !type.isAssignableFrom(field.getType())) continue;
                 try {
                     field.setAccessible(true);

@@ -34,7 +34,7 @@ final class CleanScreen {
         }
         Method event = null;
         List<Method> changes = new ArrayList<>();
-        for (Method method : panel.getDeclaredMethods()) {
+        for (Method method : Reflect.methods(panel)) {
             if (Modifier.isAbstract(method.getModifiers()) || method.isSynthetic() || method.getReturnType() != void.class) continue;
             Class<?>[] p = method.getParameterTypes();
             if (method.getName().equals("onClearModeEvent") && p.length == 1) event = method;
@@ -66,7 +66,7 @@ final class CleanScreen {
                     // TikTok's reset for the next video: replay the user's own event once it has settled.
                     Object owner = param.thisObject;
                     Object replay = enterEvent;
-                    MAIN.postDelayed(() -> replay(dispatch, owner, replay), 200);
+                    MAIN.postDelayed(Safe.run("clear display", () -> replay(dispatch, owner, replay)), 200);
                 }
             }
         });
