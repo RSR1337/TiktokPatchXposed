@@ -965,6 +965,9 @@ public final class ModSettingsActivity extends Activity {
                 value.setText(bitrateLabel());
                 row.setVisibility(Prefs.on(Prefs.HD_UPLOAD) ? View.VISIBLE : View.GONE);
             });
+        } else if (Prefs.QUALITY_PICKER.equals(key)) {
+            TextView value = navigation(card, I18n.get(S.DL_PLACE), placeLabel(), view -> push(savePage(), true));
+            syncs.add(() -> value.setText(placeLabel()));
         } else if (Prefs.EXACT_TIME.equals(key)) {
             View seconds = toggle(card, S.EXACT_TIME_SECONDS, null, Prefs.EXACT_TIME_SECONDS);
             subOption(seconds);
@@ -2176,6 +2179,58 @@ public final class ModSettingsActivity extends Activity {
         return null;
     }
 
+    private static final S[] PLACE_NAMES = {S.DL_PLACE_BY_TYPE, S.DL_PLACE_DOWNLOAD, S.DL_PLACE_DCIM};
+
+    private String placeLabel() {
+        long place = Prefs.number(Prefs.DOWNLOAD_PLACE);
+        String base = place == MediaDownload.PLACE_DOWNLOAD ? android.os.Environment.DIRECTORY_DOWNLOADS
+                : place == MediaDownload.PLACE_DCIM ? android.os.Environment.DIRECTORY_DCIM
+                : android.os.Environment.DIRECTORY_MOVIES;
+        String folder = Prefs.text(Prefs.DOWNLOAD_FOLDER).trim();
+        return base + "/" + (folder.isEmpty() ? DownloadName.DEFAULT_FOLDER : folder);
+    }
+
+    private View savePage() {
+        Page page = new Page(I18n.get(S.DL_PLACE), true);
+        TextView example = new TextView(this);
+        Runnable preview = Safe.run("settings", () -> {
+            long now = System.currentTimeMillis();
+            DownloadName.Info sample = new DownloadName.Info("tiktok", "TikTok", "7412345678901234567", now);
+            String name = DownloadName.file(Prefs.text(Prefs.DOWNLOAD_NAME), sample, DownloadFormat.Kind.VIDEO, "1080p",
+                    1, 1, now + "_1a2b3c4d", "mp4", now, java.util.TimeZone.getDefault());
+            String path = MediaDownload.target(DownloadFormat.Kind.VIDEO, sample, now).path;
+            example.setText(String.format(locale, I18n.get(S.DL_EXAMPLE), path + "/" + name));
+        });
+        page.section(I18n.get(S.DL_PLACE_WHERE));
+        List<Integer> places = java.util.Arrays.asList(MediaDownload.PLACE_BY_TYPE, MediaDownload.PLACE_DOWNLOAD,
+                MediaDownload.PLACE_DCIM);
+        page.card().addView(choiceSheet(Prefs.DOWNLOAD_PLACE, places, place -> I18n.get(PLACE_NAMES[place]),
+                S.DL_PLACE_FOOTER, preview));
+        page.section(I18n.get(S.DL_FOLDER));
+        EditText folder = textField(page.card(), Prefs.DOWNLOAD_FOLDER, DownloadName.DEFAULT_FOLDER);
+        page.footer(I18n.get(S.DL_FOLDER_FOOTER));
+        page.section(I18n.get(S.DL_NAME));
+        EditText name = textField(page.card(), Prefs.DOWNLOAD_NAME, "TikTok_{id}_…");
+        page.footer(I18n.get(S.DL_NAME_FOOTER));
+        example.setTextColor(palette.textSecondary);
+        example.setTextSize(13);
+        example.setTypeface(Fonts.regular(this));
+        example.setTextIsSelectable(true);
+        example.setPadding(dp(24), dp(14), dp(24), 0);
+        page.content.addView(example);
+        for (EditText field : new EditText[]{folder, name}) {
+            field.setSingleLine(true);
+            field.setMinLines(1);
+            field.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+                @Override public void afterTextChanged(Editable s) { preview.run(); }
+            });
+        }
+        preview.run();
+        return page.root;
+    }
+
     private View excludePage() {
         Page page = new Page(I18n.get(S.TRANSLATE_EXCLUDE), true);
         textField(page.card(), Prefs.TRANSLATE_EXCLUDE, I18n.get(S.TRANSLATE_EXCLUDE_HINT));
@@ -2205,7 +2260,7 @@ public final class ModSettingsActivity extends Activity {
         return page.root;
     }
 
-    private void textField(LinearLayout card, String key, String hint) {
+    private EditText textField(LinearLayout card, String key, String hint) {
         EditText field = new EditText(this);
         field.setBackground(null);
         field.setText(Prefs.text(key));
@@ -2225,6 +2280,7 @@ public final class ModSettingsActivity extends Activity {
             @Override public void afterTextChanged(Editable s) { Prefs.setText(key, s.toString()); }
         });
         card.addView(field, new LinearLayout.LayoutParams(-1, -2));
+        return field;
     }
 
     private void numberRow(LinearLayout card, String title, String key) {

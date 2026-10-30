@@ -156,6 +156,9 @@ final class Prefs {
     static final String ANDROID_ID = "android_id_value";
     /** Languages left untranslated, e.g. "en, uk". */
     static final String TRANSLATE_EXCLUDE = "translate_exclude";
+    static final String DOWNLOAD_NAME = "download_name_template";
+    static final String DOWNLOAD_FOLDER = "download_folder";
+    static final String DOWNLOAD_PLACE = "download_place";
     /** Comma-separated speeds for TikTok's speed menu; empty keeps TikTok's own list. */
     static final String SPEEDS = "custom_speeds";
     /** Germany keeps the behaviour of earlier releases; users can pick another country or turn it off. */
@@ -285,7 +288,8 @@ final class Prefs {
         region = Regions.normalize(loaded.getString(REGION, DEFAULT_REGION));
         oldVideoDays = Math.max(1, loaded.getInt(OLD_VIDEO_DAYS, DEFAULT_OLD_VIDEO_DAYS));
         for (String key : new String[]{FILTER_WORDS, FILTER_AUTHORS, SPEEDS, TRANSLATE_EXCLUDE, STREAK_STICKER,
-                STREAK_STICKER_TITLE, STREAK_STICKER_URL, STREAK_EXCLUDED, ANDROID_ID, FONT_SOURCE, FONT_FILE, FEED_REGION}) TEXTS.put(key, loaded.getString(key, ""));
+                STREAK_STICKER_TITLE, STREAK_STICKER_URL, STREAK_EXCLUDED, ANDROID_ID, FONT_SOURCE, FONT_FILE, FEED_REGION,
+                DOWNLOAD_NAME, DOWNLOAD_FOLDER}) TEXTS.put(key, loaded.getString(key, ""));
         for (String key : new String[]{FILTER_MIN_LIKES, FILTER_MIN_VIEWS}) NUMBERS.put(key, loaded.getLong(key, 0));
         NUMBERS.put(ACCENT_COLOR, loaded.getLong(ACCENT_COLOR, DEFAULT_ACCENT));
         NUMBERS.put(OVERLAY_OPACITY, loaded.getLong(OVERLAY_OPACITY, 100));
@@ -294,13 +298,14 @@ final class Prefs {
         NUMBERS.put(STREAK_TIME, loaded.getLong(STREAK_TIME, 0));
         NUMBERS.put(QUALITY_WIFI, loaded.getLong(QUALITY_WIFI, 0));
         NUMBERS.put(QUALITY_MOBILE, loaded.getLong(QUALITY_MOBILE, 0));
+        NUMBERS.put(DOWNLOAD_PLACE, loaded.getLong(DOWNLOAD_PLACE, 0));
         rebuildRules();
     }
 
     /** Text strings, numbers and the region, besides the switches in {@link #DEFAULTS}. */
     private static final String[] TEXT_KEYS = {REGION, FILTER_WORDS, FILTER_AUTHORS, SPEEDS, TRANSLATE_EXCLUDE,
-            STREAK_STICKER, STREAK_STICKER_TITLE, STREAK_STICKER_URL, STREAK_EXCLUDED, FEED_REGION};
-    private static final String[] LONG_KEYS = {FILTER_MIN_LIKES, FILTER_MIN_VIEWS, ACCENT_COLOR, OVERLAY_OPACITY, REFRESH_RATE, HD_BITRATE, STREAK_TIME, QUALITY_WIFI, QUALITY_MOBILE};
+            STREAK_STICKER, STREAK_STICKER_TITLE, STREAK_STICKER_URL, STREAK_EXCLUDED, FEED_REGION, DOWNLOAD_NAME, DOWNLOAD_FOLDER};
+    private static final String[] LONG_KEYS = {FILTER_MIN_LIKES, FILTER_MIN_VIEWS, ACCENT_COLOR, OVERLAY_OPACITY, REFRESH_RATE, HD_BITRATE, STREAK_TIME, QUALITY_WIFI, QUALITY_MOBILE, DOWNLOAD_PLACE};
 
     /** All settings as JSON, for a backup the user keeps wherever they like. */
     static String export() {
